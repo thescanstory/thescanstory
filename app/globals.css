@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@layer base {
+  :root {
+    /* Scan Story brand palette — deep magenta on pale pink, per brand mockups */
+    --background: 340 65% 97%;
+    --foreground: 330 60% 18%;
+    --card: 0 0% 100%;
+    --card-foreground: 330 60% 18%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 330 60% 18%;
+    --primary: 328 70% 28%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 335 70% 93%;
+    --secondary-foreground: 328 70% 28%;
+    --muted: 340 45% 95%;
+    --muted-foreground: 330 20% 45%;
+    --accent: 334 74% 66%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 335 45% 89%;
+    --input: 335 45% 89%;
+    --ring: 328 70% 40%;
+    --chart-1: 334 74% 66%;
+    --chart-2: 328 70% 40%;
+    --chart-3: 300 50% 55%;
+    --chart-4: 20 80% 65%;
+    --chart-5: 45 85% 60%;
+    --radius: 0.75rem;
+    --sidebar: 335 70% 93%;
+    --sidebar-foreground: 330 60% 18%;
+    --sidebar-primary: 328 70% 28%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 334 74% 66%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 335 45% 89%;
+    --sidebar-ring: 328 70% 40%;
+  }
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
