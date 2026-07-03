@@ -14,10 +14,12 @@ export async function POST(request: Request) {
   const links = await Promise.all(
     orders.map(async (order) => {
       const experienceUrl = `${appUrl}/experience/${order.experience_slug}`;
+      const address = (order.shipping_address ?? {}) as { name?: string };
       await sendShippedNotification({
         email: order.email,
         phone: order.phone,
         experienceUrl,
+        customerName: address.name,
       });
       return { orderId: order.id, experienceUrl };
     })
