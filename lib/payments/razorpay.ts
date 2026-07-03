@@ -44,3 +44,17 @@ export function verifyRazorpaySignature(params: {
 
   return expected === params.signature;
 }
+
+// Separate secret from the API key/secret pair — set under Settings ->
+// Webhooks in the Razorpay dashboard when the webhook URL is registered.
+export function isWebhookConfigured() {
+  return (process.env.RAZORPAY_WEBHOOK_SECRET ?? "").length > 0;
+}
+
+export function verifyRazorpayWebhookSignature(rawBody: string, signature: string) {
+  return Razorpay.validateWebhookSignature(
+    rawBody,
+    signature,
+    process.env.RAZORPAY_WEBHOOK_SECRET!
+  );
+}

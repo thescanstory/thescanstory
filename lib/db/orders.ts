@@ -75,6 +75,18 @@ export async function getOrderBySlug(slug: string) {
   return data;
 }
 
+export async function getOrderByRazorpayOrderId(razorpayOrderId: string) {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("orders")
+    .select("*")
+    .eq("razorpay_order_id", razorpayOrderId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
 export async function getOrderById(id: string) {
   const supabase = createAdminClient();
   const { data, error } = await supabase
