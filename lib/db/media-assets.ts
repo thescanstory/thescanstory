@@ -25,6 +25,65 @@ export async function createMediaAsset(params: {
   return data;
 }
 
+// For media the customer sends outside the site (WhatsApp/email/in person)
+// after placing an order without uploading — admin attaches it directly to
+// the order, no session involved. Replaces (not duplicates) an existing
+// asset of the same type for this order, cleaning up the old storage
+// object so a re-attach doesn't leave orphaned files or confuse the
+// order-detail page's one-photo/one-video assumptions.
+export async function createMediaAssetForOrder(params: {
+  orderId: string;
+  type: MediaType;
+  storageBucket: string;
+  storagePath: string;
+  mindTargetPath?: string;
+}) {
+  const supabase = createAdminClient();
+  const { data: existing } = await supabase
+    .from("media_assets")
+    .select("*")
+    .eq("order_id", params.orderId)
+    .eq("type", params.type)
+    .maybeSingle();
+
+  if (existing) {
+    const oldPaths = [existing.storage_path, existing.mind_target_path].filter(
+      (p): p is string => !!p
+    );
+    if (oldPaths.length) {
+      await supabase.storage.from(existing.storage_bucket).remove(oldPaths);
+    }
+    const { data, error } = await supabase
+      .from("media_assets")
+      .update({
+        storage_bucket: params.storageBucket,
+        storage_path: params.storagePath,
+        mind_target_path: params.mindTargetPath ?? null,
+        cached_confirmed: false,
+      })
+      .eq("id", existing.id)
+      .select("*")
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  const { data, error } = await supabase
+    .from("media_assets")
+    .insert({
+      order_id: params.orderId,
+      type: params.type,
+      storage_bucket: params.storageBucket,
+      storage_path: params.storagePath,
+      mind_target_path: params.mindTargetPath ?? null,
+    })
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
 export async function getMediaAssetsBySession(sessionId: string) {
   const supabase = createAdminClient();
   const { data, error } = await supabase

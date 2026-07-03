@@ -179,6 +179,11 @@ export function CustomizeForm({ productId }: { productId: string }) {
 
   const canContinue =
     photo.status === "done" && video.status === "done" && message.trim().length > 0;
+  const canSkip =
+    !!sessionId &&
+    photo.status !== "compiling" &&
+    photo.status !== "uploading" &&
+    video.status !== "uploading";
 
   if (sessionLoading) {
     return (
@@ -242,14 +247,26 @@ export function CustomizeForm({ productId }: { productId: string }) {
         </div>
       </section>
 
-      <Button
-        size="lg"
-        className="w-full"
-        disabled={!canContinue}
-        onClick={() => router.push(`/checkout?productId=${productId}`)}
-      >
-        Continue to Checkout
-      </Button>
+      <div className="space-y-3">
+        <Button
+          size="lg"
+          className="w-full"
+          disabled={!canContinue}
+          onClick={() => router.push(`/checkout?productId=${productId}`)}
+        >
+          Continue to Checkout
+        </Button>
+        <div className="text-center">
+          <button
+            type="button"
+            disabled={!canSkip}
+            onClick={() => router.push(`/checkout?productId=${productId}`)}
+            className="text-sm text-muted-foreground underline underline-offset-4 hover:text-primary disabled:pointer-events-none disabled:opacity-50"
+          >
+            Skip for now — I&apos;ll send my photo &amp; video separately
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

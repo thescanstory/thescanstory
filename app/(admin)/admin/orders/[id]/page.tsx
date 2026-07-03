@@ -7,6 +7,7 @@ import { OrderStatusSelect } from "@/components/admin/order-status-select";
 import { ExperienceLinkPanel } from "@/components/admin/experience-link-panel";
 import { ResendNotificationButton } from "@/components/admin/resend-notification-button";
 import { RecompileMindTargetButton } from "@/components/admin/recompile-mind-target-button";
+import { AttachMediaPanel } from "@/components/admin/attach-media-panel";
 import { formatDate, formatPaise } from "@/lib/utils/format";
 
 export const dynamic = "force-dynamic";
@@ -135,8 +136,18 @@ export default async function OrderDetailPage({
             </div>
           ))}
           {previews.length === 0 && (
-            <p className="text-sm text-muted-foreground">No media uploaded.</p>
+            <p className="text-sm text-muted-foreground">
+              No media uploaded — this order was placed without uploading.
+              Attach the customer&apos;s photo and video below once you
+              receive them.
+            </p>
           )}
+        </div>
+        <div className="mt-4">
+          <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">
+            Attach or replace media
+          </p>
+          <AttachMediaPanel orderId={order.id} />
         </div>
       </section>
     </div>

@@ -47,6 +47,51 @@
     mask-composite: exclude;
     pointer-events: none;
   }
+
+  .gold-frame {
+    background: linear-gradient(135deg, #b8860b, #f0d78c 35%, #8a6412 55%, #f5df9e 75%, #b8860b);
+    padding: 8px;
+    box-shadow: 0 12px 30px -10px rgb(0 0 0 / 0.45);
+  }
+  .gold-frame-mat {
+    background: #fffdf7;
+    padding: 6px;
+  }
+
+  .torn-edge {
+    clip-path: polygon(
+      0% 6px, 3% 0, 6% 6px, 9% 1px, 12% 7px, 15% 0, 18% 5px, 21% 1px, 24% 6px,
+      27% 0, 30% 6px, 33% 1px, 36% 7px, 39% 0, 42% 5px, 45% 1px, 48% 6px,
+      51% 0, 54% 6px, 57% 1px, 60% 7px, 63% 0, 66% 5px, 69% 1px, 72% 6px,
+      75% 0, 78% 6px, 81% 1px, 84% 7px, 87% 0, 90% 5px, 93% 1px, 96% 6px, 100% 0,
+      100% 100%, 0% 100%
+    );
+  }
+  .torn-edge-bottom {
+    clip-path: polygon(
+      0% 0%, 100% 0%,
+      100% calc(100% - 0px), 96% calc(100% - 6px), 93% calc(100% - 1px), 90% calc(100% - 5px),
+      87% 100%, 84% calc(100% - 7px), 81% calc(100% - 1px), 78% calc(100% - 6px),
+      75% 100%, 72% calc(100% - 6px), 69% calc(100% - 1px), 66% calc(100% - 5px),
+      63% 100%, 60% calc(100% - 7px), 57% calc(100% - 1px), 54% calc(100% - 6px),
+      51% 100%, 48% calc(100% - 6px), 45% calc(100% - 1px), 42% calc(100% - 5px),
+      39% 100%, 36% calc(100% - 7px), 33% calc(100% - 1px), 30% calc(100% - 6px),
+      27% 100%, 24% calc(100% - 6px), 21% calc(100% - 1px), 18% calc(100% - 5px),
+      15% 100%, 12% calc(100% - 7px), 9% calc(100% - 1px), 6% calc(100% - 6px),
+      3% 100%, 0% calc(100% - 6px)
+    );
+  }
+
+  .lined-paper {
+    background-color: #fffdf9;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 34px,
+      hsl(var(--border)) 35px
+    );
+    background-position: 0 8px;
+  }
 }
 
 @layer base {
