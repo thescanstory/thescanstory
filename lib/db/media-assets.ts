@@ -64,6 +64,24 @@ export async function reparentSessionMediaToOrder(
   if (error) throw error;
 }
 
+export async function updateMediaAssetMindTargetPath(
+  mediaAssetId: string,
+  orderId: string,
+  mindTargetPath: string
+) {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("media_assets")
+    .update({ mind_target_path: mindTargetPath })
+    .eq("id", mediaAssetId)
+    .eq("order_id", orderId)
+    .select("*")
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
 export async function markMediaCachedConfirmed(orderId: string) {
   const supabase = createAdminClient();
   const { error } = await supabase

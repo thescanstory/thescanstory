@@ -5,6 +5,8 @@ import { getMessageByOrder } from "@/lib/db/messages";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { OrderStatusSelect } from "@/components/admin/order-status-select";
 import { ExperienceLinkPanel } from "@/components/admin/experience-link-panel";
+import { ResendNotificationButton } from "@/components/admin/resend-notification-button";
+import { RecompileMindTargetButton } from "@/components/admin/recompile-mind-target-button";
 import { formatDate, formatPaise } from "@/lib/utils/format";
 
 export const dynamic = "force-dynamic";
@@ -77,6 +79,12 @@ export default async function OrderDetailPage({
             </p>
             <ExperienceLinkPanel orderId={order.id} experienceSlug={order.experience_slug} />
           </div>
+          <div>
+            <p className="mb-1 text-xs font-medium uppercase text-muted-foreground">
+              Notifications
+            </p>
+            <ResendNotificationButton orderId={order.id} />
+          </div>
         </section>
 
         <section className="space-y-4 rounded-2xl border border-white/60 bg-white/70 p-5 shadow-lg shadow-primary/5 backdrop-blur">
@@ -108,8 +116,18 @@ export default async function OrderDetailPage({
                 {asset.type.replace("_", " ")}
               </p>
               {asset.url && asset.type === "target_photo" && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={asset.url} alt="Target photo" className="max-h-64 rounded border" />
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={asset.url} alt="Target photo" className="max-h-64 rounded border" />
+                  <p className="text-xs text-muted-foreground">
+                    AR target: {asset.mind_target_path ? "generated" : "missing"}
+                  </p>
+                  <RecompileMindTargetButton
+                    orderId={order.id}
+                    mediaAssetId={asset.id}
+                    photoUrl={asset.url}
+                  />
+                </>
               )}
               {asset.url && asset.type === "video" && (
                 <video src={asset.url} controls className="max-h-64 rounded border" />
