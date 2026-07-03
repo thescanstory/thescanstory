@@ -287,8 +287,10 @@ export function CheckoutFlow({
               type="button"
               onClick={() => setPaymentMethod("online")}
               className={cn(
-                "rounded-lg border p-4 text-left",
-                paymentMethod === "online" && "border-primary ring-1 ring-primary"
+                "rounded-xl border bg-white/60 p-4 text-left shadow-sm transition-all",
+                paymentMethod === "online"
+                  ? "border-primary bg-gradient-to-br from-secondary to-white shadow-glow ring-1 ring-primary"
+                  : "hover:border-primary/30 hover:shadow-md"
               )}
             >
               <p className="font-medium">Pay Online</p>
@@ -298,8 +300,10 @@ export function CheckoutFlow({
               type="button"
               onClick={() => setPaymentMethod("cod")}
               className={cn(
-                "rounded-lg border p-4 text-left",
-                paymentMethod === "cod" && "border-primary ring-1 ring-primary"
+                "rounded-xl border bg-white/60 p-4 text-left shadow-sm transition-all",
+                paymentMethod === "cod"
+                  ? "border-primary bg-gradient-to-br from-secondary to-white shadow-glow ring-1 ring-primary"
+                  : "hover:border-primary/30 hover:shadow-md"
               )}
             >
               <p className="font-medium">Cash on Delivery</p>
@@ -358,7 +362,7 @@ export function CheckoutFlow({
         <div className="flex items-center justify-between border-t pt-4">
           <div>
             <p className="text-sm text-muted-foreground">{productName}</p>
-            <p className="text-xl font-semibold">{formatPaise(total)}</p>
+            <p className="gradient-text text-xl font-semibold">{formatPaise(total)}</p>
           </div>
           <Button type="submit" size="lg" disabled={step === "processing" || !sessionId}>
             {step === "processing" ? (

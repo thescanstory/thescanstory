@@ -5,7 +5,7 @@ import { SignOutButton } from "@/components/admin/sign-out-button";
 export default function OrdersLayout({ children }: { children: React.ReactNode }) {
   return (
     <div>
-      <header className="border-b bg-background">
+      <header className="glass sticky top-0 z-40 border-b border-white/40 shadow-sm shadow-primary/5">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:py-4">
           <Link href="/admin/orders">
             <LogoInline />

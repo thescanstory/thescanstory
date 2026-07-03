@@ -24,7 +24,7 @@ export default async function AdminOrdersPage({
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Orders</h1>
+        <h1 className="gradient-text font-serif text-2xl font-semibold">Orders</h1>
         <p className="text-sm text-muted-foreground">{total} total</p>
       </div>
 

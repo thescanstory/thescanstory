@@ -6,6 +6,47 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary via-[hsl(328_75%_42%)] to-accent bg-clip-text text-transparent;
+  }
+
+  .gradient-surface {
+    background-image:
+      radial-gradient(ellipse 900px 500px at 15% -10%, hsl(334 85% 88% / 0.55), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 0%, hsl(45 90% 88% / 0.4), transparent 55%),
+      radial-gradient(ellipse 800px 600px at 50% 110%, hsl(328 70% 90% / 0.5), transparent 60%),
+      linear-gradient(180deg, hsl(var(--background)), hsl(340 55% 95%));
+    background-attachment: fixed;
+  }
+
+  .gradient-panel {
+    @apply relative overflow-hidden bg-gradient-to-br from-white via-white to-secondary/60;
+  }
+
+  .glass {
+    @apply bg-white/70 backdrop-blur-xl;
+  }
+
+  .shadow-glow {
+    box-shadow: 0 8px 30px -8px hsl(var(--primary) / 0.35), 0 2px 8px -2px hsl(var(--primary) / 0.2);
+  }
+
+  .ring-gradient {
+    position: relative;
+  }
+  .ring-gradient::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    padding: 1.5px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--primary)), hsl(45 85% 65%));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
 }
 
 @layer base {

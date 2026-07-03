@@ -77,8 +77,10 @@ function FilterGroup({
       <Link
         href={buildHref(current, { [paramKey]: undefined })}
         className={cn(
-          "rounded-full border px-3 py-1 text-xs",
-          !activeValue && "border-primary bg-primary text-primary-foreground"
+          "rounded-full border px-3 py-1 text-xs transition-all",
+          !activeValue
+            ? "border-primary bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-sm"
+            : "hover:border-primary/40 hover:bg-accent/5"
         )}
       >
         All
@@ -88,9 +90,10 @@ function FilterGroup({
           key={opt.value}
           href={buildHref(current, { [paramKey]: opt.value })}
           className={cn(
-            "rounded-full border px-3 py-1 text-xs",
-            activeValue === opt.value &&
-              "border-primary bg-primary text-primary-foreground"
+            "rounded-full border px-3 py-1 text-xs transition-all",
+            activeValue === opt.value
+              ? "border-primary bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-sm"
+              : "hover:border-primary/40 hover:bg-accent/5"
           )}
         >
           {opt.label}

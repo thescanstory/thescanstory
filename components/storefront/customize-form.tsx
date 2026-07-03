@@ -281,8 +281,10 @@ function DropzoneBox({
     <div
       {...rootProps}
       className={cn(
-        "flex min-h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 text-center transition-colors",
-        isDragActive ? "border-primary bg-muted" : "border-input",
+        "flex min-h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed bg-white/50 p-6 text-center backdrop-blur transition-all",
+        isDragActive
+          ? "border-primary bg-gradient-to-br from-secondary to-white shadow-glow"
+          : "border-input hover:border-primary/40 hover:bg-white/70",
         state.status === "error" && "border-destructive"
       )}
     >

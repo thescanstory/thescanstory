@@ -52,7 +52,7 @@ export default async function OrderDetailPage({
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <section className="space-y-4 rounded-lg border bg-background p-5">
+        <section className="space-y-4 rounded-2xl border border-white/60 bg-white/70 p-5 shadow-lg shadow-primary/5 backdrop-blur">
           <h2 className="font-medium">Order details</h2>
           <dl className="space-y-2 text-sm">
             <Row label="Product" value={order.products?.name} />
@@ -79,7 +79,7 @@ export default async function OrderDetailPage({
           </div>
         </section>
 
-        <section className="space-y-4 rounded-lg border bg-background p-5">
+        <section className="space-y-4 rounded-2xl border border-white/60 bg-white/70 p-5 shadow-lg shadow-primary/5 backdrop-blur">
           <h2 className="font-medium">Shipping</h2>
           <dl className="space-y-2 text-sm">
             <Row label="Name" value={address.name} />
@@ -92,14 +92,14 @@ export default async function OrderDetailPage({
         </section>
       </div>
 
-      <section className="rounded-lg border bg-background p-5">
+      <section className="rounded-2xl border border-white/60 bg-white/70 p-5 shadow-lg shadow-primary/5 backdrop-blur">
         <h2 className="mb-4 font-medium">Message</h2>
         <p className="whitespace-pre-wrap text-sm">
           {message?.text_content ?? "No message"}
         </p>
       </section>
 
-      <section className="rounded-lg border bg-background p-5">
+      <section className="rounded-2xl border border-white/60 bg-white/70 p-5 shadow-lg shadow-primary/5 backdrop-blur">
         <h2 className="mb-4 font-medium">Media</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {previews.map((asset) => (

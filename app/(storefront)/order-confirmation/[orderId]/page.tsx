@@ -21,8 +21,10 @@ export default async function OrderConfirmationPage({
 
   return (
     <div className="mx-auto max-w-xl px-4 py-12 text-center sm:py-16">
-      <CheckCircle2 className="mx-auto h-12 w-12 text-primary" />
-      <h1 className="mt-4 font-serif text-xl font-semibold sm:text-2xl">
+      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent shadow-glow">
+        <CheckCircle2 className="h-9 w-9 text-white" />
+      </div>
+      <h1 className="mt-5 font-serif text-xl font-semibold sm:text-2xl">
         Order placed — thank you!
       </h1>
       <p className="mt-2 text-sm text-muted-foreground sm:text-base">
@@ -30,12 +32,12 @@ export default async function OrderConfirmationPage({
         We&apos;ll send you the scan link by email/SMS once it ships.
       </p>
 
-      <div className="mt-6 space-y-1 rounded-lg border bg-card p-5 text-left sm:mt-8 sm:p-6">
+      <div className="mt-6 space-y-1 rounded-2xl border border-white/60 bg-white/70 p-5 text-left shadow-lg shadow-primary/10 backdrop-blur sm:mt-8 sm:p-6">
         <p className="text-sm text-muted-foreground">Order ID</p>
         <p className="break-all font-mono text-sm">{order.id}</p>
         <div className="mt-4 flex justify-between text-sm">
           <span>{order.products?.name}</span>
-          <span>{formatPaise(total)}</span>
+          <span className="font-semibold">{formatPaise(total)}</span>
         </div>
         <div className="flex justify-between text-sm text-muted-foreground">
           <span>Payment method</span>

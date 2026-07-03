@@ -121,7 +121,7 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
   return (
     <div>
       {selected.size > 0 && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border bg-background p-3">
+        <div className="mb-4 flex items-center gap-2 rounded-xl border border-white/60 bg-white/70 p-3 shadow-sm backdrop-blur">
           <p className="mr-2 text-sm text-muted-foreground">
             {selected.size} selected
           </p>
@@ -140,6 +140,7 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
         </div>
       )}
 
+      <div className="overflow-hidden rounded-2xl border border-white/60 bg-white/70 shadow-lg shadow-primary/5 backdrop-blur">
       <Table>
         <TableHeader>
           <TableRow>
@@ -205,6 +206,7 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
           )}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }
