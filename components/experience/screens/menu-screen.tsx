@@ -89,7 +89,7 @@ export function MenuScreen({
           </span>
           <span>
             <span className="block text-sm font-semibold uppercase tracking-wide text-primary">
-              Our Special Message
+              Our Special Message Portal
             </span>
             <span className="block text-xs text-muted-foreground">From us, with love…</span>
           </span>
@@ -104,9 +104,8 @@ export function MenuScreen({
           </span>
           <span>
             <span className="block text-sm font-semibold uppercase tracking-wide text-primary">
-              Play &quot;Catch the Heart&quot;
+              Play &quot;Catch the Heart&quot; Mini-Game
             </span>
-            <span className="block text-xs text-muted-foreground">A tiny game, just for you</span>
           </span>
         </button>
       </motion.div>

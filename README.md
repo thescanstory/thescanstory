@@ -101,5 +101,21 @@ device testing, point `NEXT_PUBLIC_SUPABASE_URL` / `SUPABASE_URL` in
 - **Online payments**: runs in simulated mode until real `rzp_test_`
   keys are set — swap point is `lib/payments/razorpay.ts`
   (`isPaymentsConfigured`).
-- **Video compression**: validation only (size/duration caps), not real
-  transcoding.
+
+## Video compression
+
+Videos are transcoded server-side after upload (H.264/AAC, capped at
+720p on the long edge, CRF 26) — see `lib/upload/compress-video.ts`. It's
+best-effort: any failure (ffmpeg error, storage hiccup, or a transcode that
+doesn't actually come out smaller) just leaves the original,
+already-validated file in place rather than blocking the order.
+
+This runs in `/api/upload/complete` and
+`/api/admin/orders/[id]/attach-media`, both pinned to the Node.js runtime
+with `maxDuration = 120`. ffmpeg/ffprobe ship as bundled binaries
+(`ffmpeg-static` / `ffprobe-static`) rather than assuming they're on
+`$PATH` — Vercel's function runtime has neither preinstalled. **On
+Vercel, this needs a plan/function-duration tier that supports functions
+longer than the Hobby default 10s** (a full 60s/100MB video can take
+significantly longer than that to transcode) — see the deployment
+checklist.
