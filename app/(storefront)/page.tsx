@@ -1,9 +1,6 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
-import { Sparkles } from "lucide-react";
 import { getProducts } from "@/lib/db/products";
 import { ProductCard } from "@/components/storefront/product-card";
-import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
