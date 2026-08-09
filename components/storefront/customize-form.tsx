@@ -193,32 +193,37 @@ export function CustomizeForm({ productId }: { productId: string }) {
     setPreviewError(null);
     setPreviewLoading(true);
 
-    // The message only saves on an 800ms debounce (see the effect above) —
-    // flush it now rather than risk racing the order-creation call below.
-    if (messageDebounce.current) clearTimeout(messageDebounce.current);
-    const parsed = messageSchema.safeParse({ textContent: message });
-    if (parsed.success) {
-      await fetch(`/api/session/${sessionId}/message`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(parsed.data),
+    try {
+      // The message only saves on an 800ms debounce (see the effect above) —
+      // flush it now rather than risk racing the order-creation call below.
+      if (messageDebounce.current) clearTimeout(messageDebounce.current);
+      const parsed = messageSchema.safeParse({ textContent: message });
+      if (parsed.success) {
+        await fetch(`/api/session/${sessionId}/message`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(parsed.data),
+        });
+      }
+
+      const result = await submitOnlineOrder({
+        sessionId,
+        productId,
+        shipping: DEMO_SHIPPING,
       });
+
+      if ("error" in result) {
+        setPreviewError(result.error);
+        return;
+      }
+
+      localStorage.removeItem(`scan-story-session-${productId}`);
+      router.push(`/experience/${result.experienceSlug}`);
+    } catch (err) {
+      setPreviewError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setPreviewLoading(false);
     }
-
-    const result = await submitOnlineOrder({
-      sessionId,
-      productId,
-      shipping: DEMO_SHIPPING,
-    });
-
-    setPreviewLoading(false);
-    if ("error" in result) {
-      setPreviewError(result.error);
-      return;
-    }
-
-    localStorage.removeItem(`scan-story-session-${productId}`);
-    router.push(`/experience/${result.experienceSlug}`);
   }
 
   if (sessionLoading) {

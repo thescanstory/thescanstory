@@ -72,13 +72,18 @@ export function CheckoutFlow({
     form.reset(DEMO_SHIPPING);
     setPaymentMethod("online");
     setStep("processing");
-    const result = await submitOnlineOrder({
-      sessionId,
-      productId,
-      shipping: DEMO_SHIPPING,
-      onMockDelay: () => setMockBanner(true),
-    });
-    handleOrderResult(result);
+    try {
+      const result = await submitOnlineOrder({
+        sessionId,
+        productId,
+        shipping: DEMO_SHIPPING,
+        onMockDelay: () => setMockBanner(true),
+      });
+      handleOrderResult(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+      setStep("form");
+    }
   }
 
   async function handleSendOtp() {
@@ -117,30 +122,35 @@ export function CheckoutFlow({
   async function onSubmit() {
     setError(null);
 
-    if (paymentMethod === "cod") {
-      if (!otpVerified) {
-        setStep("cod-otp");
+    try {
+      if (paymentMethod === "cod") {
+        if (!otpVerified) {
+          setStep("cod-otp");
+          return;
+        }
+        setStep("processing");
+        const result = await finalizeOrder({
+          sessionId,
+          productId,
+          paymentMethod: "cod",
+          shipping: form.getValues(),
+        });
+        handleOrderResult(result);
         return;
       }
+
       setStep("processing");
-      const result = await finalizeOrder({
+      const result = await submitOnlineOrder({
         sessionId,
         productId,
-        paymentMethod: "cod",
         shipping: form.getValues(),
+        onMockDelay: () => setMockBanner(true),
       });
       handleOrderResult(result);
-      return;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+      setStep("form");
     }
-
-    setStep("processing");
-    const result = await submitOnlineOrder({
-      sessionId,
-      productId,
-      shipping: form.getValues(),
-      onMockDelay: () => setMockBanner(true),
-    });
-    handleOrderResult(result);
   }
 
   return (

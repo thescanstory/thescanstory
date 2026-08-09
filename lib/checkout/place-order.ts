@@ -28,18 +28,24 @@ async function finalizeOrder(params: {
   shipping: ShippingInput;
   razorpay?: { orderId: string; paymentId: string; signature: string };
 }): Promise<{ orderId: string; experienceSlug: string } | { error: string }> {
-  const res = await fetch("/api/checkout/confirm", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(params),
-  });
+  let res: Response;
+  try {
+    res = await fetch("/api/checkout/confirm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params),
+    });
+  } catch {
+    return { error: "Couldn't reach the server. Check your connection and try again." };
+  }
+
+  const body = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
     return { error: body.error ?? "Something went wrong placing your order" };
   }
 
-  return (await res.json()) as { orderId: string; experienceSlug: string };
+  return body as { orderId: string; experienceSlug: string };
 }
 
 // Goes through the exact same create-order -> confirm endpoints as a real
@@ -54,12 +60,22 @@ export async function submitOnlineOrder(params: {
   shipping: ShippingInput;
   onMockDelay?: () => void;
 }): Promise<{ orderId: string; experienceSlug: string } | { error: string }> {
-  const res = await fetch("/api/checkout/create-order", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ productId: params.productId }),
-  });
-  const data = await res.json();
+  let res: Response;
+  try {
+    res = await fetch("/api/checkout/create-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ productId: params.productId }),
+    });
+  } catch {
+    return { error: "Couldn't reach the server. Check your connection and try again." };
+  }
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    return { error: data.error ?? "Something went wrong starting checkout" };
+  }
 
   if (data.mode === "mock") {
     params.onMockDelay?.();
@@ -72,9 +88,14 @@ export async function submitOnlineOrder(params: {
     });
   }
 
+  if (data.mode !== "real" || !data.keyId || !data.razorpayOrderId) {
+    return { error: "Unexpected response starting checkout" };
+  }
+
   return new Promise((resolve) => {
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onerror = () => resolve({ error: "Couldn't load the payment provider. Check your connection and try again." });
     script.onload = () => {
       const rzp = new window.Razorpay({
         key: data.keyId,
