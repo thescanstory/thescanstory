@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isSmsConfigured, sendOtpSms } from "@/lib/sms/sms";
 
 const OTP_TTL_MINUTES = 5;
 const DEV_OTP_CODE = "123456";
@@ -24,9 +25,18 @@ export async function sendOtp(params: { sessionId: string; phone: string }) {
   });
   if (error) throw error;
 
-  // Swap point: replace this console.log with a real SMS provider call
-  // (MSG91/Twilio). Callers of sendOtp/verifyOtp never change.
-  console.log(`[OTP STUB] Would send code "${code}" to ${params.phone} via SMS.`);
+  if (!isSmsConfigured()) {
+    console.log(`[OTP STUB] Would send code "${code}" to ${params.phone} via SMS.`);
+    return;
+  }
+
+  try {
+    await sendOtpSms(params.phone, code);
+  } catch (err) {
+    // Fail-open: the code is already stored and the customer can request
+    // a resend. Mirrors the email-send failure handling in lib/notify/notify.ts.
+    console.error(`[SMS FAILED] OTP to ${params.phone}:`, err);
+  }
 }
 
 export async function verifyOtp(params: {

@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/internal/cleanup-abandoned-uploads",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}

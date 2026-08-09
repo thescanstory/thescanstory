@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { isSmsConfigured, sendShippedSms } from "@/lib/sms/sms";
 
 const PLACEHOLDER_MARKERS = ["", "re_xxxxxxxxxxxx"];
 const FROM_ADDRESS = "The Scan Story <onboarding@resend.dev>";
@@ -29,11 +30,17 @@ function renderShippedEmail(params: { customerName?: string; experienceUrl: stri
   };
 }
 
-// SMS swap point: replace with a real WhatsApp Business API / SMS provider
-// call once that provider is chosen. Email above is real; this remains a
-// stub by design.
-function logSmsStub(params: { phone: string; experienceUrl: string }) {
-  console.log(`[SMS STUB] Would send experience link to ${params.phone}: ${params.experienceUrl}`);
+async function sendSms(params: { phone: string; experienceUrl: string }) {
+  if (!isSmsConfigured()) {
+    console.log(`[SMS STUB] Would send experience link to ${params.phone}: ${params.experienceUrl}`);
+    return;
+  }
+
+  try {
+    await sendShippedSms(params.phone, params.experienceUrl);
+  } catch (err) {
+    console.error(`[SMS FAILED] ${params.phone}:`, err);
+  }
 }
 
 export async function sendShippedNotification(params: {
@@ -42,7 +49,7 @@ export async function sendShippedNotification(params: {
   experienceUrl: string;
   customerName?: string;
 }) {
-  logSmsStub(params);
+  await sendSms(params);
 
   if (!isEmailConfigured()) {
     console.log(
