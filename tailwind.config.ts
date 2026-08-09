@@ -67,6 +67,16 @@ const config: Config = {
   			sans: ['var(--font-sans)'],
   			serif: ['var(--font-serif)'],
   			handwriting: ['var(--font-handwriting)']
+  		},
+  		keyframes: {
+  			scan: {
+  				'0%': { top: '0%' },
+  				'50%': { top: '100%' },
+  				'100%': { top: '0%' },
+  			}
+  		},
+  		animation: {
+  			scan: 'scan 2.5s ease-in-out infinite',
   		}
   	}
   },
