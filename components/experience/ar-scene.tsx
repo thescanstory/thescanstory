@@ -34,6 +34,39 @@ async function getImageAspectRatio(url: string) {
   }
 }
 
+function getVideoDimensions(url: string) {
+  return new Promise<{ width: number; height: number }>((resolve) => {
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.muted = true;
+    video.src = url;
+    video.onloadedmetadata = () => {
+      resolve({ width: video.videoWidth || 1, height: video.videoHeight || 1 });
+    };
+    video.onerror = () => resolve({ width: 1, height: 1 });
+  });
+}
+
+// The plane is sized to the printed photo's exact proportions (see
+// PlaneGeometry(1, aspect) below) — that part already matches the frame.
+// This handles the separate concern of the VIDEO's own aspect ratio: if it
+// doesn't match the photo's, mapping it 1:1 onto that plane would stretch/
+// squash the footage. Crops instead (like CSS object-fit: cover) so the
+// video always looks correct, whatever its source dimensions.
+function applyCoverCrop(
+  texture: THREE.VideoTexture,
+  planeAspectRatio: number,
+  videoAspectRatio: number
+) {
+  if (videoAspectRatio > planeAspectRatio) {
+    texture.repeat.set(planeAspectRatio / videoAspectRatio, 1);
+    texture.offset.set((1 - texture.repeat.x) / 2, 0);
+  } else {
+    texture.repeat.set(1, videoAspectRatio / planeAspectRatio);
+    texture.offset.set(0, (1 - texture.repeat.y) / 2);
+  }
+}
+
 export function ARScene({
   orderId,
   slug,
@@ -78,8 +111,16 @@ export function ARScene({
       video.playsInline = true;
       video.crossOrigin = "anonymous";
 
-      const aspect = await getImageAspectRatio(photoUrl);
+      const [aspect, videoDimensions] = await Promise.all([
+        getImageAspectRatio(photoUrl),
+        getVideoDimensions(videoUrl),
+      ]);
       const videoTexture = new THREE.VideoTexture(video);
+      applyCoverCrop(
+        videoTexture,
+        1 / aspect,
+        videoDimensions.width / videoDimensions.height
+      );
       const geometry = new THREE.PlaneGeometry(1, aspect);
       const material = new THREE.MeshBasicMaterial({ map: videoTexture });
       const plane = new THREE.Mesh(geometry, material);
