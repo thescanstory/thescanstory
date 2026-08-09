@@ -67,7 +67,7 @@ export function MenuScreen({
         className="mt-8 w-full max-w-sm space-y-3"
       >
         <button
-          onClick={() => router.push(`/experience/${slug}/ar`)}
+          onClick={() => router.push(`/experience/${slug}`)}
           className="flex w-full items-center gap-4 rounded-2xl bg-secondary px-5 py-4 text-left transition-transform active:scale-[0.98]"
         >
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent text-white">
@@ -75,7 +75,7 @@ export function MenuScreen({
           </span>
           <span>
             <span className="block text-sm font-semibold uppercase tracking-wide text-primary">
-              Launch AR Scan Portal
+              Scan the printed photo
             </span>
           </span>
         </button>

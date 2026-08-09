@@ -1,15 +1,16 @@
 import { notFound } from "next/navigation";
 import { getOrderBySlug } from "@/lib/db/orders";
 import { getMediaAssetsByOrder } from "@/lib/db/media-assets";
+import { getMessageByOrder } from "@/lib/db/messages";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { ARScene } from "@/components/experience/ar-scene";
+import { GreetingScreen } from "@/components/experience/greeting-screen";
 import { PreparingScreen } from "@/components/experience/preparing-screen";
 
 export const dynamic = "force-dynamic";
 
 const SIGNED_URL_TTL_SECONDS = 60 * 60;
 
-export default async function ExperiencePage({
+export default async function ExperienceStoryPage({
   params,
 }: {
   params: { slug: string };
@@ -17,14 +18,19 @@ export default async function ExperiencePage({
   const order = await getOrderBySlug(params.slug);
   if (!order) notFound();
 
-  const assets = await getMediaAssetsByOrder(order.id);
+  const [assets, messageRow] = await Promise.all([
+    getMediaAssetsByOrder(order.id),
+    getMessageByOrder(order.id),
+  ]);
+
   const photo = assets.find((a) => a.type === "target_photo");
   const video = assets.find((a) => a.type === "video");
 
-  // Media not attached yet — show a "come back soon" screen
   if (!photo || !video) {
     return <PreparingScreen />;
   }
+
+  const cachedConfirmed = !!(photo.cached_confirmed && video.cached_confirmed);
 
   const supabase = createAdminClient();
   const [photoSigned, videoSigned, mindSigned] = await Promise.all([
@@ -41,12 +47,12 @@ export default async function ExperiencePage({
       : Promise.resolve({ data: null }),
   ]);
 
-  // The root experience URL is now the AR scan page — point camera at the
-  // printed frame and the video plays over it at the exact same size.
   return (
-    <ARScene
-      orderId={order.id}
+    <GreetingScreen
       slug={params.slug}
+      orderId={order.id}
+      message={messageRow?.text_content ?? ""}
+      cachedConfirmed={cachedConfirmed}
       signedUrls={{
         photo: photoSigned.data?.signedUrl ?? "",
         video: videoSigned.data?.signedUrl ?? "",

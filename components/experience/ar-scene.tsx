@@ -34,16 +34,30 @@ async function getImageAspectRatio(url: string) {
   }
 }
 
+// Must never hang: this runs before mindarThree.start() (the call that
+// actually opens the camera), so a stalled off-DOM video element here —
+// e.g. a known iOS Safari quirk where loadedmetadata/error can both fail
+// to fire — would silently block camera access forever with no visible
+// error. Falls back to a 1:1 guess (a slightly wrong crop) rather than
+// risk that; the camera opening is the priority, not a perfect crop.
 function getVideoDimensions(url: string) {
   return new Promise<{ width: number; height: number }>((resolve) => {
+    let settled = false;
+    const settle = (dims: { width: number; height: number }) => {
+      if (settled) return;
+      settled = true;
+      resolve(dims);
+    };
+
     const video = document.createElement("video");
     video.preload = "metadata";
     video.muted = true;
     video.src = url;
     video.onloadedmetadata = () => {
-      resolve({ width: video.videoWidth || 1, height: video.videoHeight || 1 });
+      settle({ width: video.videoWidth || 1, height: video.videoHeight || 1 });
     };
-    video.onerror = () => resolve({ width: 1, height: 1 });
+    video.onerror = () => settle({ width: 1, height: 1 });
+    setTimeout(() => settle({ width: 1, height: 1 }), 3000);
   });
 }
 
@@ -148,34 +162,60 @@ export function ARScene({
     <div className="relative h-screen w-screen bg-black">
       <div ref={containerRef} className="absolute inset-0" />
 
-      <Link
-        href={`/experience/${slug}`}
-        className="absolute left-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur"
-      >
-        <ArrowLeft className="h-4 w-4" />
-      </Link>
+      {/* Back button — only visible once the camera is running */}
+      {status === "running" && (
+        <Link
+          href={`/experience/${slug}/story`}
+          className="absolute left-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Link>
+      )}
 
       {status !== "running" && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/85 px-6 text-center text-white">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-black px-6 text-center text-white">
           {status === "idle" && (
             <>
-              <p className="max-w-xs text-sm text-white/70">
-                Point your camera at the printed photo to bring your story to
-                life.
-              </p>
-              <Button size="lg" className="bg-accent text-white hover:bg-accent/90" onClick={start}>
-                Start camera
+              {/* Scan frame hint graphic */}
+              <div className="relative flex h-52 w-52 items-center justify-center">
+                {/* Corner brackets */}
+                <span className="absolute left-0 top-0 h-8 w-8 border-l-2 border-t-2 border-white/60 rounded-tl" />
+                <span className="absolute right-0 top-0 h-8 w-8 border-r-2 border-t-2 border-white/60 rounded-tr" />
+                <span className="absolute bottom-0 left-0 h-8 w-8 border-b-2 border-l-2 border-white/60 rounded-bl" />
+                <span className="absolute bottom-0 right-0 h-8 w-8 border-b-2 border-r-2 border-white/60 rounded-br" />
+                <p className="text-xs font-medium uppercase tracking-widest text-white/50">
+                  Aim at your frame
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-lg font-semibold text-white">Scan your printed frame</p>
+                <p className="max-w-xs text-sm text-white/60">
+                  Point your camera at the photo frame — your video will play right over it.
+                </p>
+              </div>
+              <Button
+                size="lg"
+                className="rounded-full bg-accent px-8 text-white hover:bg-accent/90"
+                onClick={start}
+              >
+                Open Camera
               </Button>
             </>
           )}
-          {status === "starting" && <p>Starting camera…</p>}
+          {status === "starting" && (
+            <p className="text-sm text-white/70">Starting camera…</p>
+          )}
           {status === "permission-denied" && (
             <>
               <p className="max-w-xs text-sm text-white/70">
                 Camera access was denied. Please allow camera access in your
                 browser settings, then try again.
               </p>
-              <Button size="lg" className="bg-accent text-white hover:bg-accent/90" onClick={start}>
+              <Button
+                size="lg"
+                className="rounded-full bg-accent px-8 text-white hover:bg-accent/90"
+                onClick={start}
+              >
                 Try again
               </Button>
             </>
@@ -183,9 +223,14 @@ export function ARScene({
           {status === "error" && (
             <>
               <p className="max-w-xs text-sm text-white/70">
-                Something went wrong starting the camera{errorMessage ? `: ${errorMessage}` : ""}.
+                Something went wrong starting the camera
+                {errorMessage ? `: ${errorMessage}` : ""}.
               </p>
-              <Button size="lg" className="bg-accent text-white hover:bg-accent/90" onClick={start}>
+              <Button
+                size="lg"
+                className="rounded-full bg-accent px-8 text-white hover:bg-accent/90"
+                onClick={start}
+              >
                 Try again
               </Button>
             </>
