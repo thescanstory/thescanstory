@@ -31,6 +31,21 @@ declare global {
 type PaymentMethod = "online" | "cod";
 type Step = "form" | "cod-otp" | "processing";
 
+// Self-safening by construction, not by an env check: this always goes
+// through the real /api/checkout/create-order -> confirm flow. Right now
+// that's mock mode (no Razorpay keys yet), so it completes instantly. The
+// moment real keys are added, data.mode stops being "mock" and this same
+// button opens the real Razorpay modal like any other order — it never
+// bypasses payment, it just pre-fills the form.
+const DEMO_SHIPPING: ShippingInput = {
+  name: "Demo Customer",
+  addressLine: "221B Baker Street",
+  city: "Mumbai",
+  pin: "400001",
+  phone: "9876543210",
+  email: "demo@example.com",
+};
+
 export function CheckoutFlow({
   productId,
   productName,
@@ -64,19 +79,19 @@ export function CheckoutFlow({
   const total =
     pricePaise + (paymentMethod === "cod" ? codHandlingFeePaise : 0);
 
-  async function finalizeOrder(razorpay?: {
-    orderId: string;
-    paymentId: string;
-    signature: string;
-  }) {
+  async function finalizeOrder(
+    shipping: ShippingInput,
+    method: PaymentMethod,
+    razorpay?: { orderId: string; paymentId: string; signature: string }
+  ) {
     const res = await fetch("/api/checkout/confirm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         sessionId,
         productId,
-        paymentMethod,
-        shipping: form.getValues(),
+        paymentMethod: method,
+        shipping,
         razorpay,
       }),
     });
@@ -91,6 +106,60 @@ export function CheckoutFlow({
     const { orderId } = (await res.json()) as { orderId: string };
     localStorage.removeItem(`scan-story-session-${productId}`);
     router.push(`/order-confirmation/${orderId}`);
+  }
+
+  // Shared by the real "Pay Online" submit and the demo skip button — the
+  // only difference is which shipping values get passed in.
+  async function submitOnlineOrder(shipping: ShippingInput) {
+    setStep("processing");
+    const res = await fetch("/api/checkout/create-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ productId }),
+    });
+    const data = await res.json();
+
+    if (data.mode === "mock") {
+      setMockBanner(true);
+      await new Promise((r) => setTimeout(r, 1500));
+      await finalizeOrder(shipping, "online");
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => {
+      const rzp = new window.Razorpay({
+        key: data.keyId,
+        amount: data.amountPaise,
+        currency: "INR",
+        name: "Scan Story",
+        order_id: data.razorpayOrderId,
+        handler: async (response: {
+          razorpay_order_id: string;
+          razorpay_payment_id: string;
+          razorpay_signature: string;
+        }) => {
+          await finalizeOrder(shipping, "online", {
+            orderId: response.razorpay_order_id,
+            paymentId: response.razorpay_payment_id,
+            signature: response.razorpay_signature,
+          });
+        },
+        modal: {
+          ondismiss: () => setStep("form"),
+        },
+      });
+      rzp.open();
+    };
+    document.body.appendChild(script);
+  }
+
+  async function handleDemoSkip() {
+    setError(null);
+    form.reset(DEMO_SHIPPING);
+    setPaymentMethod("online");
+    await submitOnlineOrder(DEMO_SHIPPING);
   }
 
   async function handleSendOtp() {
@@ -135,54 +204,11 @@ export function CheckoutFlow({
         return;
       }
       setStep("processing");
-      await finalizeOrder();
+      await finalizeOrder(form.getValues(), "cod");
       return;
     }
 
-    // Online
-    setStep("processing");
-    const res = await fetch("/api/checkout/create-order", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productId }),
-    });
-    const data = await res.json();
-
-    if (data.mode === "mock") {
-      setMockBanner(true);
-      await new Promise((r) => setTimeout(r, 1500));
-      await finalizeOrder();
-      return;
-    }
-
-    // Real Razorpay checkout
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => {
-      const rzp = new window.Razorpay({
-        key: data.keyId,
-        amount: data.amountPaise,
-        currency: "INR",
-        name: "Scan Story",
-        order_id: data.razorpayOrderId,
-        handler: async (response: {
-          razorpay_order_id: string;
-          razorpay_payment_id: string;
-          razorpay_signature: string;
-        }) => {
-          await finalizeOrder({
-            orderId: response.razorpay_order_id,
-            paymentId: response.razorpay_payment_id,
-            signature: response.razorpay_signature,
-          });
-        },
-        modal: {
-          ondismiss: () => setStep("form"),
-        },
-      });
-      rzp.open();
-    };
-    document.body.appendChild(script);
+    await submitOnlineOrder(form.getValues());
   }
 
   return (
@@ -194,6 +220,24 @@ export function CheckoutFlow({
             upload your photo, video, and message first.
           </div>
         )}
+
+        {sessionId && (
+          <div className="flex items-center justify-between rounded-lg border border-dashed border-primary/40 bg-primary/5 p-3">
+            <p className="text-sm text-muted-foreground">
+              Just want to see the AR experience? Skip typing the form.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={step === "processing"}
+              onClick={handleDemoSkip}
+            >
+              Skip Checkout (Demo)
+            </Button>
+          </div>
+        )}
+
         <section className="space-y-4">
           <h2 className="text-lg font-medium">Shipping details</h2>
           <FormField
