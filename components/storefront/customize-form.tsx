@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDropzone } from "react-dropzone";
-import { CheckCircle2, ImageIcon, Loader2, VideoIcon } from "lucide-react";
+import { CheckCircle2, ImageIcon, Loader2, Sparkles, VideoIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,7 @@ import { uploadFileDirect } from "@/lib/upload/upload-file";
 import { validateTargetPhoto, validateVideo } from "@/lib/upload/validate";
 import { compileMindTarget } from "@/lib/mindar/compile-target";
 import { messageSchema } from "@/lib/validation/schemas";
+import { DEMO_SHIPPING, submitOnlineOrder } from "@/lib/checkout/place-order";
 import { cn } from "@/lib/utils";
 
 type UploadStatus =
@@ -38,6 +39,8 @@ export function CustomizeForm({ productId }: { productId: string }) {
   const [video, setVideo] = useState<UploadState>({ status: "idle" });
   const [message, setMessage] = useState("");
   const [messageSaved, setMessageSaved] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const messageDebounce = useRef<ReturnType<typeof setTimeout>>();
 
   const onPhotoDrop = useCallback(
@@ -185,6 +188,39 @@ export function CustomizeForm({ productId }: { productId: string }) {
     photo.status !== "uploading" &&
     video.status !== "uploading";
 
+  async function handlePreviewAR() {
+    if (!sessionId) return;
+    setPreviewError(null);
+    setPreviewLoading(true);
+
+    // The message only saves on an 800ms debounce (see the effect above) —
+    // flush it now rather than risk racing the order-creation call below.
+    if (messageDebounce.current) clearTimeout(messageDebounce.current);
+    const parsed = messageSchema.safeParse({ textContent: message });
+    if (parsed.success) {
+      await fetch(`/api/session/${sessionId}/message`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(parsed.data),
+      });
+    }
+
+    const result = await submitOnlineOrder({
+      sessionId,
+      productId,
+      shipping: DEMO_SHIPPING,
+    });
+
+    setPreviewLoading(false);
+    if ("error" in result) {
+      setPreviewError(result.error);
+      return;
+    }
+
+    localStorage.removeItem(`scan-story-session-${productId}`);
+    router.push(`/experience/${result.experienceSlug}`);
+  }
+
   if (sessionLoading) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -248,6 +284,28 @@ export function CustomizeForm({ productId }: { productId: string }) {
       </section>
 
       <div className="space-y-3">
+        {canContinue && (
+          <Button
+            type="button"
+            size="lg"
+            variant="outline"
+            className="w-full"
+            disabled={previewLoading}
+            onClick={handlePreviewAR}
+          >
+            {previewLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <Sparkles className="mr-1.5 h-4 w-4" />
+                Preview AR Now (skip checkout)
+              </>
+            )}
+          </Button>
+        )}
+        {previewError && (
+          <p className="text-center text-sm text-destructive">{previewError}</p>
+        )}
         <Button
           size="lg"
           className="w-full"

@@ -19,32 +19,10 @@ import {
 import { shippingSchema, type ShippingInput } from "@/lib/validation/schemas";
 import { formatPaise } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
-
-declare global {
-  interface Window {
-    Razorpay: new (options: Record<string, unknown>) => {
-      open: () => void;
-    };
-  }
-}
+import { DEMO_SHIPPING, finalizeOrder, submitOnlineOrder } from "@/lib/checkout/place-order";
 
 type PaymentMethod = "online" | "cod";
 type Step = "form" | "cod-otp" | "processing";
-
-// Self-safening by construction, not by an env check: this always goes
-// through the real /api/checkout/create-order -> confirm flow. Right now
-// that's mock mode (no Razorpay keys yet), so it completes instantly. The
-// moment real keys are added, data.mode stops being "mock" and this same
-// button opens the real Razorpay modal like any other order — it never
-// bypasses payment, it just pre-fills the form.
-const DEMO_SHIPPING: ShippingInput = {
-  name: "Demo Customer",
-  addressLine: "221B Baker Street",
-  city: "Mumbai",
-  pin: "400001",
-  phone: "9876543210",
-  email: "demo@example.com",
-};
 
 export function CheckoutFlow({
   productId,
@@ -79,87 +57,28 @@ export function CheckoutFlow({
   const total =
     pricePaise + (paymentMethod === "cod" ? codHandlingFeePaise : 0);
 
-  async function finalizeOrder(
-    shipping: ShippingInput,
-    method: PaymentMethod,
-    razorpay?: { orderId: string; paymentId: string; signature: string }
-  ) {
-    const res = await fetch("/api/checkout/confirm", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sessionId,
-        productId,
-        paymentMethod: method,
-        shipping,
-        razorpay,
-      }),
-    });
-
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Something went wrong placing your order");
+  function handleOrderResult(result: { orderId: string } | { error: string }) {
+    if ("error" in result) {
+      setError(result.error);
       setStep("form");
       return;
     }
-
-    const { orderId } = (await res.json()) as { orderId: string };
     localStorage.removeItem(`scan-story-session-${productId}`);
-    router.push(`/order-confirmation/${orderId}`);
-  }
-
-  // Shared by the real "Pay Online" submit and the demo skip button — the
-  // only difference is which shipping values get passed in.
-  async function submitOnlineOrder(shipping: ShippingInput) {
-    setStep("processing");
-    const res = await fetch("/api/checkout/create-order", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productId }),
-    });
-    const data = await res.json();
-
-    if (data.mode === "mock") {
-      setMockBanner(true);
-      await new Promise((r) => setTimeout(r, 1500));
-      await finalizeOrder(shipping, "online");
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => {
-      const rzp = new window.Razorpay({
-        key: data.keyId,
-        amount: data.amountPaise,
-        currency: "INR",
-        name: "Scan Story",
-        order_id: data.razorpayOrderId,
-        handler: async (response: {
-          razorpay_order_id: string;
-          razorpay_payment_id: string;
-          razorpay_signature: string;
-        }) => {
-          await finalizeOrder(shipping, "online", {
-            orderId: response.razorpay_order_id,
-            paymentId: response.razorpay_payment_id,
-            signature: response.razorpay_signature,
-          });
-        },
-        modal: {
-          ondismiss: () => setStep("form"),
-        },
-      });
-      rzp.open();
-    };
-    document.body.appendChild(script);
+    router.push(`/order-confirmation/${result.orderId}`);
   }
 
   async function handleDemoSkip() {
     setError(null);
     form.reset(DEMO_SHIPPING);
     setPaymentMethod("online");
-    await submitOnlineOrder(DEMO_SHIPPING);
+    setStep("processing");
+    const result = await submitOnlineOrder({
+      sessionId,
+      productId,
+      shipping: DEMO_SHIPPING,
+      onMockDelay: () => setMockBanner(true),
+    });
+    handleOrderResult(result);
   }
 
   async function handleSendOtp() {
@@ -204,11 +123,24 @@ export function CheckoutFlow({
         return;
       }
       setStep("processing");
-      await finalizeOrder(form.getValues(), "cod");
+      const result = await finalizeOrder({
+        sessionId,
+        productId,
+        paymentMethod: "cod",
+        shipping: form.getValues(),
+      });
+      handleOrderResult(result);
       return;
     }
 
-    await submitOnlineOrder(form.getValues());
+    setStep("processing");
+    const result = await submitOnlineOrder({
+      sessionId,
+      productId,
+      shipping: form.getValues(),
+      onMockDelay: () => setMockBanner(true),
+    });
+    handleOrderResult(result);
   }
 
   return (
