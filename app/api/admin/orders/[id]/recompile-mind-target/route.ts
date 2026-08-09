@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { updateMediaAssetMindTargetPath } from "@/lib/db/media-assets";
+import { isAdminAuthenticated } from "@/lib/auth/require-admin";
 
 // The actual MindAR compile happens client-side (see lib/mindar/compile-target.ts —
 // the compiler needs Canvas/WebGL and isn't Node-runnable) in the admin's own
@@ -10,6 +11,10 @@ export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  if (!(await isAdminAuthenticated())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const body = await request.json();
   const { mediaAssetId, mindTargetPath } = body as {
     mediaAssetId: string;

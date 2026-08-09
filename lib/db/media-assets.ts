@@ -145,7 +145,7 @@ export async function markMediaCachedConfirmed(orderId: string) {
   const supabase = createAdminClient();
   const { error } = await supabase
     .from("media_assets")
-    .update({ cached_confirmed: true })
+    .update({ cached_confirmed: true, cached_confirmed_at: new Date().toISOString() })
     .eq("order_id", orderId);
 
   if (error) throw error;

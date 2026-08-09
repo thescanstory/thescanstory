@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createMediaAssetForOrder } from "@/lib/db/media-assets";
 import { compressVideoInStorage } from "@/lib/upload/compress-video";
 import { verifyUploadedObject } from "@/lib/upload/verify-uploaded";
+import { isAdminAuthenticated } from "@/lib/auth/require-admin";
 import type { MediaType } from "@/types/database.types";
 
 // Counterpart to /api/upload/complete for orders placed without uploading —
@@ -17,6 +18,10 @@ export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  if (!(await isAdminAuthenticated())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const body = await request.json();
   const { type, storageBucket, storagePath, mindTargetPath } = body as {
     type: MediaType;

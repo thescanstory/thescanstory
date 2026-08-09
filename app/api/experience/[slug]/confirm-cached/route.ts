@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import { getOrderBySlug } from "@/lib/db/orders";
-import { getMediaAssetsByOrder, markMediaCachedConfirmed } from "@/lib/db/media-assets";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { markMediaCachedConfirmed } from "@/lib/db/media-assets";
 
+// Deletion of the cloud copy is NOT immediate — see migration
+// 00000000000006_cached_media_grace_period.sql. This only marks the
+// client's claim; the daily purge-expired-cached-media cron actually
+// deletes storage objects after a grace period, so Screen 2's network
+// fallback still has something to fall back to if the local cache silently
+// failed.
 export async function POST(
   _request: Request,
   { params }: { params: { slug: string } }
@@ -12,22 +17,7 @@ export async function POST(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const assets = await getMediaAssetsByOrder(order.id);
   await markMediaCachedConfirmed(order.id);
-
-  // Best-effort cleanup — deletion failures shouldn't block the UX, the
-  // client has already confirmed everything is cached locally.
-  const supabase = createAdminClient();
-  const paths = assets.flatMap((a) =>
-    [a.storage_path, a.mind_target_path].filter((p): p is string => !!p)
-  );
-  if (paths.length > 0) {
-    try {
-      await supabase.storage.from("uploads-active").remove(paths);
-    } catch {
-      // Non-fatal — see comment above.
-    }
-  }
 
   return NextResponse.json({ ok: true });
 }

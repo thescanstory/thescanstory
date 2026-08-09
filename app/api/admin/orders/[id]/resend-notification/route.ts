@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getOrderById } from "@/lib/db/orders";
 import { sendShippedNotification } from "@/lib/notify/notify";
+import { isAdminAuthenticated } from "@/lib/auth/require-admin";
 
 // Lets admin re-trigger the shipped-notification email without touching
 // order status — for a bounced/lost email, a customer who never got the
@@ -9,6 +10,10 @@ export async function POST(
   _request: Request,
   { params }: { params: { id: string } }
 ) {
+  if (!(await isAdminAuthenticated())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const order = await getOrderById(params.id);
   if (!order) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });

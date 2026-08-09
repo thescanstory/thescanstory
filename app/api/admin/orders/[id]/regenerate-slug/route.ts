@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateExperienceSlug } from "@/lib/utils/slug";
+import { isAdminAuthenticated } from "@/lib/auth/require-admin";
 
 export async function POST(
   _request: Request,
   { params }: { params: { id: string } }
 ) {
+  if (!(await isAdminAuthenticated())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const supabase = createAdminClient();
 
   for (let attempt = 0; attempt < 5; attempt++) {

@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { zipTargetPhotosForOrders } from "@/lib/utils/zip";
+import { isAdminAuthenticated } from "@/lib/auth/require-admin";
 
 export async function POST(request: Request) {
+  if (!(await isAdminAuthenticated())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { ids } = (await request.json()) as { ids: string[] };
   if (!ids?.length) {
     return NextResponse.json({ error: "No orders selected" }, { status: 400 });
