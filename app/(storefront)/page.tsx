@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { getProducts } from "@/lib/db/products";
@@ -7,8 +8,14 @@ import { Button } from "@/components/ui/button";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const products = await getProducts();
   const demoSlug = process.env.NEXT_PUBLIC_DEMO_EXPERIENCE_SLUG;
+
+  // If a demo slug is configured, send the homepage straight to the AR experience.
+  if (demoSlug) {
+    redirect(`/experience/${demoSlug}`);
+  }
+
+  const products = await getProducts();
 
   return (
     <div className="relative mx-auto max-w-5xl overflow-hidden px-4 py-10 sm:py-12">
@@ -27,14 +34,7 @@ export default async function HomePage() {
         <p className="mx-auto mt-3 max-w-sm text-sm text-muted-foreground sm:max-w-md sm:text-base">
           Point your phone at the printed photo and watch your story play.
         </p>
-        {demoSlug && (
-          <Button asChild size="lg" className="mt-6">
-            <Link href={`/experience/${demoSlug}`}>
-              <Sparkles className="mr-1.5 h-4 w-4" />
-              Try the AR demo
-            </Link>
-          </Button>
-        )}
+
       </div>
       <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-3">
         {products.map((product) => (
