@@ -20,6 +20,16 @@
     background-attachment: fixed;
   }
 
+  /* Print views (e.g. shipping labels) should never waste ink on the
+     decorative background, regardless of the browser's own "background
+     graphics" print setting. */
+  @media print {
+    .gradient-surface {
+      background-image: none;
+      background-color: white;
+    }
+  }
+
   .gradient-panel {
     @apply relative overflow-hidden bg-gradient-to-br from-white via-white to-secondary/60;
   }

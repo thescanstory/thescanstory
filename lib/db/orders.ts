@@ -99,6 +99,17 @@ export async function getOrderById(id: string) {
   return data;
 }
 
+export async function getOrdersByIds(ids: string[]) {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("orders")
+    .select("id, phone, shipping_address, experience_slug, products(name)")
+    .in("id", ids);
+
+  if (error) throw error;
+  return data;
+}
+
 export async function listOrders(params: {
   status?: OrderStatus;
   paymentMethod?: PaymentMethod;

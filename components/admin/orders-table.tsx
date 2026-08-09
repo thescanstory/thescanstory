@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Copy, Download, FileArchive, Truck } from "lucide-react";
+import { Copy, Download, FileArchive, Printer, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -112,6 +112,10 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
     window.location.reload();
   }
 
+  function handlePrintLabels() {
+    window.open(`/admin/orders/print-labels?ids=${[...selected].join(",")}`, "_blank");
+  }
+
   function copyLink(slug: string) {
     const url = `${window.location.origin}/experience/${slug}`;
     navigator.clipboard.writeText(url);
@@ -132,6 +136,10 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
           <Button size="sm" variant="outline" disabled={pending} onClick={handleExportZip}>
             <FileArchive className="mr-1.5 h-3.5 w-3.5" />
             Download Photos (ZIP)
+          </Button>
+          <Button size="sm" variant="outline" disabled={pending} onClick={handlePrintLabels}>
+            <Printer className="mr-1.5 h-3.5 w-3.5" />
+            Print Labels
           </Button>
           <Button size="sm" disabled={pending} onClick={handleMarkShipped}>
             <Truck className="mr-1.5 h-3.5 w-3.5" />
