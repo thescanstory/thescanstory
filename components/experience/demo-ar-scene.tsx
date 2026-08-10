@@ -15,6 +15,7 @@ type Status =
   | "error";
 
 export function DemoARScene() {
+  console.log("[DemoARScene] Component rendering...");
   const containerRef = useRef<HTMLDivElement>(null);
   const mindarRef = useRef<MindARThree | null>(null);
   const [status, setStatus] = useState<Status>("idle");
