@@ -101,7 +101,10 @@ export function DemoARScene() {
 
       const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
       scene.add(light);
-      const geometry = new THREE.BoxGeometry(1, 1, 1);
+      // Size the cube relative to target width (1 unit = target width).
+      // 1x1x1 fills the whole target/frame, so use a smaller fraction for a
+      // nicer floating cube: 0.2 = 1/5 of the target width.
+      const geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
       const material = new THREE.MeshBasicMaterial({ color: 0x3b82f6 });
       const cube = new THREE.Mesh(geometry, material);
       const anchor = mindarThree.addAnchor(0);
