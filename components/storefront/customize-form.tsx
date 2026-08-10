@@ -239,8 +239,10 @@ export function CustomizeForm({ productId }: { productId: string }) {
       <section>
         <Label className="text-base">1. Upload the photo to print</Label>
         <p className="mb-3 mt-1 text-sm text-muted-foreground">
-          This becomes the printed image. Use a clear, well-lit photo, at
-          least 1000x1000px.
+          Upload <strong className="font-medium text-foreground">only the photo itself</strong> — no frame border, no mat, no shadow.
+          Crop it tight to the edges of the image. This is what the camera will
+          recognise, and the video will play exactly inside this area.
+          At least 1000×1000px, well-lit.
         </p>
         <DropzoneBox
           rootProps={photoDropzone.getRootProps()}

@@ -2,13 +2,20 @@
 
 import { useCallback, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Play, ScanLine } from "lucide-react";
 import * as THREE from "three";
 import { Button } from "@/components/ui/button";
 import { getCachedMedia } from "@/lib/cache/media-cache";
 import type { MindARThree } from "mind-ar/dist/mindar-image-three.prod.js";
 
-type Status = "idle" | "starting" | "running" | "permission-denied" | "error";
+type Status =
+  | "welcome"      // pre-launch: camera not open, welcome message shown
+  | "starting"     // MindAR initialising / camera permission requested
+  | "scanning"     // camera live, waiting for target
+  | "target-found" // target in frame — "Play Video" button shown
+  | "playing"      // video is playing over the target
+  | "permission-denied"
+  | "error";
 
 async function resolveMediaUrl(
   orderId: string,
@@ -34,12 +41,7 @@ async function getImageAspectRatio(url: string) {
   }
 }
 
-// Must never hang: this runs before mindarThree.start() (the call that
-// actually opens the camera), so a stalled off-DOM video element here —
-// e.g. a known iOS Safari quirk where loadedmetadata/error can both fail
-// to fire — would silently block camera access forever with no visible
-// error. Falls back to a 1:1 guess (a slightly wrong crop) rather than
-// risk that; the camera opening is the priority, not a perfect crop.
+// Must never hang — falls back to 1:1 rather than stall the camera open.
 function getVideoDimensions(url: string) {
   return new Promise<{ width: number; height: number }>((resolve) => {
     let settled = false;
@@ -48,25 +50,17 @@ function getVideoDimensions(url: string) {
       settled = true;
       resolve(dims);
     };
-
     const video = document.createElement("video");
     video.preload = "metadata";
     video.muted = true;
     video.src = url;
-    video.onloadedmetadata = () => {
+    video.onloadedmetadata = () =>
       settle({ width: video.videoWidth || 1, height: video.videoHeight || 1 });
-    };
     video.onerror = () => settle({ width: 1, height: 1 });
     setTimeout(() => settle({ width: 1, height: 1 }), 3000);
   });
 }
 
-// The plane is sized to the printed photo's exact proportions (see
-// PlaneGeometry(1, aspect) below) — that part already matches the frame.
-// This handles the separate concern of the VIDEO's own aspect ratio: if it
-// doesn't match the photo's, mapping it 1:1 onto that plane would stretch/
-// squash the footage. Crops instead (like CSS object-fit: cover) so the
-// video always looks correct, whatever its source dimensions.
 function applyCoverCrop(
   texture: THREE.VideoTexture,
   planeAspectRatio: number,
@@ -85,17 +79,22 @@ export function ARScene({
   orderId,
   slug,
   signedUrls,
+  welcomeMessage,
 }: {
   orderId: string;
   slug: string;
   signedUrls: { photo: string; video: string; mind: string };
+  /** Optional greeting shown on the pre-launch welcome card */
+  welcomeMessage?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mindarRef = useRef<MindARThree | null>(null);
-  const [status, setStatus] = useState<Status>("idle");
+  const videoElRef = useRef<HTMLVideoElement | null>(null);
+  const [status, setStatus] = useState<Status>("welcome");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const start = useCallback(async () => {
+  // ── launch MindAR (called from the "Start AR" button) ─────────────────
+  const startAR = useCallback(async () => {
     if (!containerRef.current) return;
     setStatus("starting");
     setErrorMessage(null);
@@ -121,14 +120,16 @@ export function ARScene({
       const video = document.createElement("video");
       video.src = videoUrl;
       video.loop = true;
-      video.muted = true;
+      video.muted = false;
       video.playsInline = true;
       video.crossOrigin = "anonymous";
+      videoElRef.current = video;
 
       const [aspect, videoDimensions] = await Promise.all([
         getImageAspectRatio(photoUrl),
         getVideoDimensions(videoUrl),
       ]);
+
       const videoTexture = new THREE.VideoTexture(video);
       applyCoverCrop(
         videoTexture,
@@ -141,12 +142,20 @@ export function ARScene({
 
       const anchor = mindarThree.addAnchor(0);
       anchor.group.add(plane);
-      anchor.onTargetFound = () => video.play().catch(() => {});
-      anchor.onTargetLost = () => video.pause();
+
+      anchor.onTargetFound = () => {
+        // Target is in frame — surface the Play button, don't auto-play
+        setStatus("target-found");
+      };
+      anchor.onTargetLost = () => {
+        // If we lose the target mid-play, pause and go back to scanning
+        video.pause();
+        setStatus("scanning");
+      };
 
       await mindarThree.start();
       renderer.setAnimationLoop(() => renderer.render(scene, camera));
-      setStatus("running");
+      setStatus("scanning");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
       if (/permission|NotAllowedError/i.test(message)) {
@@ -158,53 +167,105 @@ export function ARScene({
     }
   }, [orderId, signedUrls]);
 
+  // ── play button handler ────────────────────────────────────────────────
+  const playVideo = useCallback(() => {
+    videoElRef.current?.play().catch(() => {});
+    setStatus("playing");
+  }, []);
+
+  // ── helpers ───────────────────────────────────────────────────────────
+  const isOverlayVisible =
+    status !== "scanning" && status !== "playing" && status !== "target-found";
+
   return (
-    <div className="relative h-screen w-screen bg-black">
+    <div className="relative h-screen w-screen bg-black overflow-hidden">
+      {/* MindAR renders into this container once the camera starts */}
       <div ref={containerRef} className="absolute inset-0" />
 
-      {/* Back button — only visible once the camera is running */}
-      {status === "running" && (
+      {/* ── Back button — shown once the camera is live ─────────────── */}
+      {(status === "scanning" || status === "target-found" || status === "playing") && (
         <Link
           href={`/experience/${slug}/story`}
-          className="absolute left-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur"
+          className="absolute left-4 top-4 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur"
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
       )}
 
-      {status !== "running" && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-black px-6 text-center text-white">
-          {status === "idle" && (
+      {/* ── "Scanning…" hint shown while camera is live but no target ── */}
+      {status === "scanning" && (
+        <div className="pointer-events-none absolute bottom-10 left-0 right-0 flex flex-col items-center gap-3 z-10 px-6">
+          {/* Animated corner-bracket viewfinder */}
+          <div className="relative flex h-52 w-52 items-center justify-center">
+            <span className="absolute left-0 top-0 h-8 w-8 border-l-2 border-t-2 border-white/60 rounded-tl animate-pulse" />
+            <span className="absolute right-0 top-0 h-8 w-8 border-r-2 border-t-2 border-white/60 rounded-tr animate-pulse" />
+            <span className="absolute bottom-0 left-0 h-8 w-8 border-b-2 border-l-2 border-white/60 rounded-bl animate-pulse" />
+            <span className="absolute bottom-0 right-0 h-8 w-8 border-b-2 border-r-2 border-white/60 rounded-br animate-pulse" />
+            <p className="text-xs font-medium uppercase tracking-widest text-white/50">
+              Aim here
+            </p>
+          </div>
+          <p className="text-sm text-white/60">Point at the printed photo…</p>
+        </div>
+      )}
+
+      {/* ── "Play Video" button — shown once target is detected ─────── */}
+      {status === "target-found" && (
+        <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+          <button
+            onClick={playVideo}
+            className="pointer-events-auto flex h-20 w-20 items-center justify-center rounded-full bg-white/20 backdrop-blur-md border-2 border-white/60 text-white shadow-2xl transition-transform active:scale-95 hover:bg-white/30"
+          >
+            <Play className="h-9 w-9 fill-white" />
+          </button>
+        </div>
+      )}
+
+      {/* ── Full-screen overlays (welcome / starting / errors) ───────── */}
+      {isOverlayVisible && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-black px-6 text-center text-white z-30">
+
+          {/* WELCOME — pre-launch card */}
+          {status === "welcome" && (
             <>
-              {/* Scan frame hint graphic */}
-              <div className="relative flex h-52 w-52 items-center justify-center">
-                {/* Corner brackets */}
-                <span className="absolute left-0 top-0 h-8 w-8 border-l-2 border-t-2 border-white/60 rounded-tl" />
-                <span className="absolute right-0 top-0 h-8 w-8 border-r-2 border-t-2 border-white/60 rounded-tr" />
-                <span className="absolute bottom-0 left-0 h-8 w-8 border-b-2 border-l-2 border-white/60 rounded-bl" />
-                <span className="absolute bottom-0 right-0 h-8 w-8 border-b-2 border-r-2 border-white/60 rounded-br" />
-                <p className="text-xs font-medium uppercase tracking-widest text-white/50">
-                  Aim at your frame
+              {/* Viewfinder graphic */}
+              <div className="relative flex h-48 w-48 items-center justify-center">
+                <span className="absolute left-0 top-0 h-8 w-8 border-l-2 border-t-2 border-white/50 rounded-tl" />
+                <span className="absolute right-0 top-0 h-8 w-8 border-r-2 border-t-2 border-white/50 rounded-tr" />
+                <span className="absolute bottom-0 left-0 h-8 w-8 border-b-2 border-l-2 border-white/50 rounded-bl" />
+                <span className="absolute bottom-0 right-0 h-8 w-8 border-b-2 border-r-2 border-white/50 rounded-br" />
+                <ScanLine className="h-10 w-10 text-white/40" />
+              </div>
+
+              <div className="space-y-2 max-w-xs">
+                <p className="text-xl font-semibold text-white">
+                  {welcomeMessage ?? "Your AR experience is ready ✨"}
+                </p>
+                <p className="text-sm text-white/60 leading-relaxed">
+                  Point your camera at the printed photo and we'll play your
+                  personal video right over it — no QR code needed.
                 </p>
               </div>
-              <div className="space-y-1">
-                <p className="text-lg font-semibold text-white">Scan your printed frame</p>
-                <p className="max-w-xs text-sm text-white/60">
-                  Point your camera at the photo frame — your video will play right over it.
-                </p>
-              </div>
+
               <Button
                 size="lg"
-                className="rounded-full bg-accent px-8 text-white hover:bg-accent/90"
-                onClick={start}
+                className="rounded-full bg-accent px-10 text-white hover:bg-accent/90 shadow-lg"
+                onClick={startAR}
               >
-                Open Camera
+                Start
               </Button>
             </>
           )}
+
+          {/* STARTING — spinner */}
           {status === "starting" && (
-            <p className="text-sm text-white/70">Starting camera…</p>
+            <div className="flex flex-col items-center gap-3">
+              <div className="h-8 w-8 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+              <p className="text-sm text-white/70">Opening camera…</p>
+            </div>
           )}
+
+          {/* PERMISSION DENIED */}
           {status === "permission-denied" && (
             <>
               <p className="max-w-xs text-sm text-white/70">
@@ -214,12 +275,14 @@ export function ARScene({
               <Button
                 size="lg"
                 className="rounded-full bg-accent px-8 text-white hover:bg-accent/90"
-                onClick={start}
+                onClick={startAR}
               >
                 Try again
               </Button>
             </>
           )}
+
+          {/* ERROR */}
           {status === "error" && (
             <>
               <p className="max-w-xs text-sm text-white/70">
@@ -229,7 +292,7 @@ export function ARScene({
               <Button
                 size="lg"
                 className="rounded-full bg-accent px-8 text-white hover:bg-accent/90"
-                onClick={start}
+                onClick={startAR}
               >
                 Try again
               </Button>

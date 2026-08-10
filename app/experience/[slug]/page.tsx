@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import { getOrderBySlug } from "@/lib/db/orders";
 import { getMediaAssetsByOrder } from "@/lib/db/media-assets";
+import { getMessageByOrder } from "@/lib/db/messages";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { splitMessage } from "@/lib/experience/split-message";
 import { ARScene } from "@/components/experience/ar-scene";
 import { PreparingScreen } from "@/components/experience/preparing-screen";
 
@@ -17,7 +19,11 @@ export default async function ExperiencePage({
   const order = await getOrderBySlug(params.slug);
   if (!order) notFound();
 
-  const assets = await getMediaAssetsByOrder(order.id);
+  const [assets, messageRow] = await Promise.all([
+    getMediaAssetsByOrder(order.id),
+    getMessageByOrder(order.id),
+  ]);
+
   const photo = assets.find((a) => a.type === "target_photo");
   const video = assets.find((a) => a.type === "video");
 
@@ -41,12 +47,17 @@ export default async function ExperiencePage({
       : Promise.resolve({ data: null }),
   ]);
 
-  // The root experience URL is now the AR scan page — point camera at the
-  // printed frame and the video plays over it at the exact same size.
+  // Extract the heading from the message to use as a personal welcome line
+  const { heading } = splitMessage(messageRow?.text_content ?? "");
+  const welcomeMessage = heading
+    ? `${heading} ✨`
+    : "Your AR experience is ready ✨";
+
   return (
     <ARScene
       orderId={order.id}
       slug={params.slug}
+      welcomeMessage={welcomeMessage}
       signedUrls={{
         photo: photoSigned.data?.signedUrl ?? "",
         video: videoSigned.data?.signedUrl ?? "",
