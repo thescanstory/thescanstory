@@ -101,10 +101,19 @@ export function DemoARScene() {
 
       const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
       scene.add(light);
-      // Keep an anchor (needed to receive onTargetFound/onTargetLost),
-      // but the visible "full-frame" blue fill is rendered as a DOM overlay
-      // in the JSX so it always matches the exact size of the visible frame.
+      // In MindAR anchor space, 1 unit = the target image's width/height.
+      // A 1x1x1 box therefore exactly covers (and aligns with) the target's
+      // on-screen footprint, tracking it as the camera moves.
+      const geometry = new THREE.BoxGeometry(1, 1, 1);
+      const material = new THREE.MeshBasicMaterial({
+        color: 0x3b82f6,
+        transparent: true,
+        opacity: 0.4,
+        depthWrite: false,
+      });
+      const box = new THREE.Mesh(geometry, material);
       const anchor = mindarThree.addAnchor(0);
+      anchor.group.add(box);
 
       // ADDED: Verbose tracking logs
       anchor.onTargetFound = () => {
@@ -170,11 +179,6 @@ export function DemoARScene() {
     <div className="relative h-screen w-screen overflow-hidden bg-black">
       {/* MindAR renders into this container once the camera starts */}
       <div ref={containerRef} className="absolute inset-0" />
-
-      {/* ── Full-frame blue fill — exactly the size of the visible frame ── */}
-      {status === "found" && (
-        <div className="pointer-events-none absolute inset-0 z-[5] bg-blue-500/40" />
-      )}
 
       {/* ── Scanning hint ─────────────────────────────────────────────── */}
       {status === "scanning" && (
