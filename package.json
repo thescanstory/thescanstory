@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": "24.x"
+    "node": "20.x"
   },
   "scripts": {
     "dev": "next dev",
@@ -54,7 +54,7 @@
   },
   "devDependencies": {
     "@types/ffprobe-static": "^2.0.3",
-    "@types/node": "^24",
+    "@types/node": "^20",
     "@types/papaparse": "^5.5.2",
     "@types/react": "^18",
     "@types/react-dom": "^18",
