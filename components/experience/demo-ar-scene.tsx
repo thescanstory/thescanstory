@@ -2,33 +2,99 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { ScanLine } from "lucide-react";
+import { motion } from "framer-motion";
+import { Play, RotateCcw, ScanLine } from "lucide-react";
 import type { MindARThree } from "mind-ar/dist/mindar-image-three.prod.js";
+import { Logo } from "@/components/brand/logo";
 
 type Status =
   | "idle"
   | "starting"
   | "scanning"
   | "found"
+  | "revealing"
+  | "video"
   | "permission-denied"
   | "camera-not-found"
   | "error";
 
+// Camera shows the matched target for 3s, then blurs into the video.
+const REVEAL_DELAY_MS = 3000;
+const BLUR_TRANSITION_MS = 900;
+
 export function DemoARScene() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const mindarRef = useRef<MindARThree | null>(null);
+  const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [cameras, setCameras] = useState<string[]>([]);
+  const [countdown, setCountdown] = useState(REVEAL_DELAY_MS / 1000);
+  const [videoEnded, setVideoEnded] = useState(false);
 
-  // Minimal console-only logger (kept for diagnostics, hidden in production UI)
+  // Minimal console-only logger (for diagnostics)
   const log = useCallback((msg: string) => {
     console.log("[DemoARScene]", msg);
   }, []);
 
+  const clearRevealTimers = useCallback(() => {
+    if (revealTimerRef.current) {
+      clearTimeout(revealTimerRef.current);
+      revealTimerRef.current = null;
+    }
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
+  }, []);
+
+  // Keep the camera + aligned box on screen for 3s, then blur into the video.
+  const startRevealSequence = useCallback(() => {
+    clearRevealTimers();
+    setCountdown(REVEAL_DELAY_MS / 1000);
+    setStatus("found");
+    setVideoEnded(false);
+
+    countdownRef.current = setInterval(() => {
+      setCountdown((c) => {
+        const next = Math.max(0, c - 1);
+        if (next === 0 && countdownRef.current) {
+          clearInterval(countdownRef.current);
+          countdownRef.current = null;
+        }
+        return next;
+      });
+    }, 1000);
+
+    revealTimerRef.current = setTimeout(() => {
+      setStatus("revealing"); // CSS blurs the camera here
+      revealTimerRef.current = setTimeout(() => {
+        setStatus("video"); // swap to full-screen video
+        revealTimerRef.current = null;
+      }, BLUR_TRANSITION_MS);
+    }, REVEAL_DELAY_MS);
+  }, [clearRevealTimers]);
+
+  const resetToIdle = useCallback(() => {
+    clearRevealTimers();
+    setVideoEnded(false);
+    setStatus("idle");
+    try {
+      mindarRef.current?.stop();
+    } catch {
+      /* ignore */
+    }
+    if (containerRef.current) containerRef.current.innerHTML = "";
+    mindarRef.current = null;
+  }, [clearRevealTimers]);
 
   const startAR = useCallback(async () => {
     if (!containerRef.current) return;
+    clearRevealTimers();
+    setVideoEnded(false);
     setStatus("starting");
     setErrorMessage(null);
     setCameras([]);
@@ -115,11 +181,12 @@ export function DemoARScene() {
       // ADDED: Verbose tracking logs
       anchor.onTargetFound = () => {
         log(">>> TRACKING: Target found!");
-        setStatus("found");
+        startRevealSequence();
       };
       anchor.onTargetLost = () => {
         log(">>> TRACKING: Target lost.");
-        setStatus("scanning");
+        setStatus((s) => (s === "video" || s === "revealing" ? s : "scanning"));
+        clearRevealTimers();
       };
 
       log("Step 4/4: calling mindarThree.start()...");
@@ -162,36 +229,134 @@ export function DemoARScene() {
         setErrorMessage(message);
       }
     }
-  }, [log]);
+  }, [log, startRevealSequence, clearRevealTimers]);
+
+  // Autoplay the video once we transition to the video screen.
+  useEffect(() => {
+    if (status === "video" && videoRef.current) {
+      videoRef.current.play().catch(() => {
+        // Autoplay may be blocked until a user gesture — the inline
+        // controls let them start it manually.
+      });
+    }
+  }, [status]);
 
   useEffect(() => {
     return () => {
+      clearRevealTimers();
       mindarRef.current?.stop();
     };
-  }, []);
+  }, [clearRevealTimers]);
 
-  const isOverlayVisible = status !== "scanning" && status !== "found";
+  const isOverlayVisible =
+    status !== "scanning" &&
+    status !== "found" &&
+    status !== "revealing" &&
+    status !== "video";
+
+  const progressPct = (countdown / (REVEAL_DELAY_MS / 1000)) * 100;
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-black">
-      {/* MindAR renders into this container once the camera starts */}
-      <div ref={containerRef} className="absolute inset-0" />
+    <div className="relative h-screen w-screen overflow-hidden bg-black text-white">
+      {/* MindAR renders the live camera + aligned box here */}
+      <div
+        ref={containerRef}
+        className={
+          "absolute inset-0 transition-[filter,transform] duration-700 ease-in-out " +
+          (status === "revealing" ? "scale-110 blur-2xl" : "scale-100 blur-0")
+        }
+      />
 
-      {/* ── Scanning hint ─────────────────────────────────────────────── */}
+      {/* Fade veil that smooths the hand-off into the video */}
+      <div
+        className={
+          "pointer-events-none absolute inset-0 z-[8] bg-black transition-opacity duration-700 " +
+          (status === "revealing" ? "opacity-90" : "opacity-0")
+        }
+      />
+
+      {/* ── Scanning overlay ──────────────────────────────────────────── */}
       {status === "scanning" && (
-        <div className="pointer-events-none absolute bottom-10 left-0 right-0 z-10 flex justify-center">
-          <p className="rounded-full bg-black/50 px-4 py-2 text-sm text-white backdrop-blur">
-            Point camera at the target image…
-          </p>
+        <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center">
+          <div className="relative flex h-44 w-44 items-center justify-center">
+            <span className="absolute left-0 top-0 h-9 w-9 border-l-2 border-t-2 border-accent/80 rounded-tl animate-pulse" />
+            <span className="absolute right-0 top-0 h-9 w-9 border-r-2 border-t-2 border-accent/80 rounded-tr animate-pulse" />
+            <span className="absolute bottom-0 left-0 h-9 w-9 border-b-2 border-l-2 border-accent/80 rounded-bl animate-pulse" />
+            <span className="absolute bottom-0 right-0 h-9 w-9 border-b-2 border-r-2 border-accent/80 rounded-br animate-pulse" />
+            <ScanLine className="h-12 w-12 text-white/50" />
+          </div>
+          <p className="mt-6 text-sm text-white/80">Point camera at the target image…</p>
         </div>
       )}
 
-      {/* ── Target found — AR overlay is displayed ─────────────────────── */}
+      {/* ── Found: countdown before blurring into the video ───────────── */}
       {status === "found" && (
-        <div className="pointer-events-none absolute bottom-10 left-0 right-0 z-10 flex justify-center">
-          <p className="rounded-full bg-green-600/70 px-4 py-2 text-sm text-white backdrop-blur">
-            Target found! 🎯
-          </p>
+        <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-end pb-16">
+          <div className="rounded-2xl bg-black/55 px-6 py-4 text-center backdrop-blur">
+            <p className="text-sm font-medium text-white/90">Target matched 🎯</p>
+            <p className="mt-1 text-xs text-white/60">Unlocking your memory in…</p>
+            <div className="mt-3 flex items-center justify-center gap-3">
+              <span className="font-serif text-3xl font-semibold text-accent">
+                {countdown}
+              </span>
+              <div className="h-2 w-32 overflow-hidden rounded-full bg-white/15">
+                <div
+                  className="h-full rounded-full bg-accent transition-all duration-1000 ease-linear"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Full-screen video player ──────────────────────────────────── */}
+      {status === "video" && (
+        <div className="absolute inset-0 z-10 flex flex-col bg-black">
+          <video
+            ref={videoRef}
+            src="/demo-video.mp4"
+            controls={videoEnded}
+            autoPlay
+            playsInline
+            onEnded={() => setVideoEnded(true)}
+            className="h-full w-full bg-black object-contain"
+          />
+
+          {/* Tap overlay if autoplay was blocked */}
+          {!videoEnded && (
+            <button
+              type="button"
+              onClick={() => {
+                videoRef.current?.play();
+                setVideoEnded(false);
+              }}
+              className="absolute inset-0 flex items-center justify-center bg-black/30"
+              aria-label="Play video"
+            >
+              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 text-black">
+                <Play className="ml-1 h-7 w-7" />
+              </span>
+            </button>
+          )}
+
+          <div className="absolute bottom-6 left-0 right-0 z-20 flex justify-center gap-3">
+            <button
+              onClick={() => {
+                videoRef.current?.play();
+                setVideoEnded(false);
+              }}
+              className="flex items-center gap-2 rounded-full bg-white/90 px-5 py-2.5 text-sm font-semibold text-black shadow-lg active:scale-95"
+            >
+              <RotateCcw className="h-4 w-4" /> Replay
+            </button>
+            <button
+              onClick={resetToIdle}
+              className="flex items-center gap-2 rounded-full bg-black/60 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur active:scale-95"
+            >
+              <ScanLine className="h-4 w-4" /> Scan again
+            </button>
+          </div>
         </div>
       )}
 
@@ -200,30 +365,51 @@ export function DemoARScene() {
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-6 bg-black px-6 text-center text-white">
           {status === "idle" && (
             <>
-              <div className="relative flex h-48 w-48 items-center justify-center">
-                <span className="absolute left-0 top-0 h-8 w-8 border-l-2 border-t-2 border-white/50 rounded-tl" />
-                <span className="absolute right-0 top-0 h-8 w-8 border-r-2 border-t-2 border-white/50 rounded-tr" />
-                <span className="absolute bottom-0 left-0 h-8 w-8 border-b-2 border-l-2 border-white/50 rounded-bl" />
-                <span className="absolute bottom-0 right-0 h-8 w-8 border-b-2 border-r-2 border-white/50 rounded-br" />
-                <ScanLine className="h-10 w-10 text-white/40" />
-              </div>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.7, ease: "easeOut" }}
+              >
+                <Logo size="lg" />
+              </motion.div>
 
-              <div className="space-y-2 max-w-xs">
-                <p className="text-xl font-semibold text-white">
-                  Demo AR Experience
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15, duration: 0.7 }}
+                className="relative flex h-44 w-44 items-center justify-center"
+              >
+                <span className="absolute left-0 top-0 h-9 w-9 border-l-2 border-t-2 border-white/40 rounded-tl" />
+                <span className="absolute right-0 top-0 h-9 w-9 border-r-2 border-t-2 border-white/40 rounded-tr" />
+                <span className="absolute bottom-0 left-0 h-9 w-9 border-b-2 border-l-2 border-white/40 rounded-bl" />
+                <span className="absolute bottom-0 right-0 h-9 w-9 border-b-2 border-r-2 border-white/40 rounded-br" />
+                <ScanLine className="h-12 w-12 text-white/40" />
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.7 }}
+                className="space-y-2 max-w-xs"
+              >
+                <p className="text-sm font-medium uppercase tracking-[0.25em] text-accent">
+                  Scan · Reveal · Relive
                 </p>
                 <p className="text-sm text-white/60 leading-relaxed">
-                  Point your camera at the target image to see a blue cube
-                  appear over it.
+                  Point your camera at the printed photo. When it locks on, the
+                  frame fills with color — then watch your memory come alive.
                 </p>
-              </div>
+              </motion.div>
 
-              <button
+              <motion.button
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.45, duration: 0.7 }}
                 onClick={startAR}
-                className="rounded-full bg-accent px-10 py-3 text-base font-semibold text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
+                className="rounded-full bg-accent px-10 py-3.5 text-base font-semibold text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
               >
                 Start AR
-              </button>
+              </motion.button>
             </>
           )}
 
