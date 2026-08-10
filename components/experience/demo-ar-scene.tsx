@@ -173,7 +173,7 @@ export function DemoARScene() {
 
       {/* ── Full-frame blue fill — exactly the size of the visible frame ── */}
       {status === "found" && (
-        <div className="pointer-events-none absolute inset-0 z-[5] bg-blue-500" />
+        <div className="pointer-events-none absolute inset-0 z-[5] bg-blue-500/40" />
       )}
 
       {/* ── Scanning hint ─────────────────────────────────────────────── */}
