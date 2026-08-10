@@ -262,7 +262,7 @@ export function DemoARScene() {
   const progressPct = (countdown / (REVEAL_DELAY_MS / 1000)) * 100;
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-black text-white">
+    <div className="relative z-0 h-full w-full overflow-hidden bg-black text-white">
       {/* MindAR renders the live camera + aligned box here */}
       <div
         ref={containerRef}
