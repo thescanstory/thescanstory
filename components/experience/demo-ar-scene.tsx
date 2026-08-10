@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { motion } from "framer-motion";
-import { Play, RotateCcw, ScanLine } from "lucide-react";
+import { RotateCcw, ScanLine, Volume2 } from "lucide-react";
 import type { MindARThree } from "mind-ar/dist/mindar-image-three.prod.js";
 import { Logo } from "@/components/brand/logo";
 
@@ -22,9 +22,60 @@ type Status =
 const REVEAL_DELAY_MS = 3000;
 const BLUR_TRANSITION_MS = 900;
 
+// The video is textured onto a 3D plane parented to the target anchor, so it
+// plays *inside* the printed picture frame. Because a perfect on-device anchor
+// match can't be guaranteed up front, the plane's position/scale/rotation are
+// tuneable live (see the calibration panel) and persisted in localStorage.
+type Calib = { x: number; y: number; z: number; scale: number; rot: number };
+const DEFAULT_CALIB: Calib = { x: 0, y: 0, z: 0, scale: 0.85, rot: 0 };
+const CALIB_KEY = "demo-ar-calib";
+function loadCalib(): Calib {
+  if (typeof window === "undefined") return { ...DEFAULT_CALIB };
+  try {
+    const raw = localStorage.getItem(CALIB_KEY);
+    if (raw) return { ...DEFAULT_CALIB, ...JSON.parse(raw) };
+  } catch {
+    /* ignore */
+  }
+  return { ...DEFAULT_CALIB };
+}
+function saveCalib(c: Calib) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(CALIB_KEY, JSON.stringify(c));
+  } catch {
+    /* ignore */
+  }
+}
+// Hidden <video> whose frames feed the in-frame VideoTexture. Created
+// synchronously inside the Start AR click gesture so iOS allows autoplay.
+function createInFrameVideo(container: HTMLElement): HTMLVideoElement {
+  const v = document.createElement("video");
+  v.src = "/demo-video.mp4";
+  v.crossOrigin = "anonymous";
+  v.loop = true;
+  v.muted = true; // autoplay-safe; 🔊 unmutes on tap (user gesture)
+  v.playsInline = true;
+  v.setAttribute("playsinline", "");
+  v.setAttribute("webkit-playsinline", "");
+    v.style.position = "absolute";
+  v.style.opacity = "0";
+  v.style.pointerEvents = "none";
+  v.style.width = "128px";
+  v.style.height = "auto";
+  container.appendChild(v);
+  void v.play().catch(() => {
+    /* playback handled on interaction */
+  });
+  return v;
+}
+
 export function DemoARScene() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+                  const containerRef = useRef<HTMLDivElement>(null);
+  const videoElRef = useRef<HTMLVideoElement | null>(null);
+  const planeRef = useRef<THREE.Mesh | null>(null);
+  const calibRef = useRef<Calib>(loadCalib());
+  const statusRef = useRef<Status>("idle");
   const mindarRef = useRef<MindARThree | null>(null);
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -33,7 +84,9 @@ export function DemoARScene() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [cameras, setCameras] = useState<string[]>([]);
   const [countdown, setCountdown] = useState(REVEAL_DELAY_MS / 1000);
-  const [videoEnded, setVideoEnded] = useState(false);
+
+  // Keep statusRef current — read by the animation loop.
+  statusRef.current = status;
 
   // Minimal console-only logger (for diagnostics)
   const log = useCallback((msg: string) => {
@@ -56,7 +109,6 @@ export function DemoARScene() {
     clearRevealTimers();
     setCountdown(REVEAL_DELAY_MS / 1000);
     setStatus("found");
-    setVideoEnded(false);
 
     countdownRef.current = setInterval(() => {
       setCountdown((c) => {
@@ -80,7 +132,6 @@ export function DemoARScene() {
 
   const resetToIdle = useCallback(() => {
     clearRevealTimers();
-    setVideoEnded(false);
     setStatus("idle");
     try {
       mindarRef.current?.stop();
@@ -94,7 +145,6 @@ export function DemoARScene() {
   const startAR = useCallback(async () => {
     if (!containerRef.current) return;
     clearRevealTimers();
-    setVideoEnded(false);
     setStatus("starting");
     setErrorMessage(null);
     setCameras([]);
@@ -143,8 +193,16 @@ export function DemoARScene() {
           .map(d => d.label || `Unknown Camera (${d.deviceId.slice(0, 5)})`);
         setCameras(foundCameras);
         log(`Cameras found: ${foundCameras.length}`);
-      } catch {
+            } catch {
         log("Could not enumerate devices");
+      }
+
+      // Create the hidden in-frame video element *now* — before the first
+      // await — so we're still inside the Start AR button's user gesture,
+      // which lets iOS autoplay the video for the in-frame plane. It's hidden;
+      // its frames are sampled by a VideoTexture in the 3D plane below.
+      if (containerRef.current) {
+        videoElRef.current = createInFrameVideo(containerRef.current);
       }
 
       const { MindARThree } = await import("mind-ar/dist/mindar-image-three.prod.js");
@@ -167,13 +225,49 @@ export function DemoARScene() {
       // ADDED: Log target loading
       log("Attempting to load targets from: /targets.mind");
 
-      const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+            const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
       scene.add(light);
-      // Keep the anchor for the onTargetFound / onTargetLost callbacks that
-      // drive the countdown -> blur -> video flow. No 3D mesh is attached,
-      // so there is nothing to misalign against the camera feed — the camera
-      // view stays clean and always aligned.
+
+      // Anchor fixed to the target image. The video plane is parented to this
+      // anchor so the video plays *inside* the physical picture frame.
       const anchor = mindarThree.addAnchor(0);
+
+      // Build the in-frame video plane: the target image textured onto a plane
+      // lying in the target plane, sized to the video aspect. Its position /
+      // scale / rotation are driven by calibRef (see the calibration panel) so
+      // you can fit it precisely inside YOUR printed picture frame.
+      const _v = videoElRef.current;
+      if (_v) {
+        const tex = new THREE.VideoTexture(_v);
+        tex.minFilter = THREE.LinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        const baseAspect =
+          _v.videoWidth && _v.videoHeight
+            ? _v.videoHeight / _v.videoWidth
+            : 1;
+        const geo = new THREE.PlaneGeometry(1, baseAspect);
+        const mat = new THREE.MeshBasicMaterial({
+          map: tex,
+          transparent: true,
+          opacity: 1,
+          side: THREE.FrontSide,
+          toneMapped: false,
+        });
+        const videoPlane = new THREE.Mesh(geo, mat);
+        videoPlane.visible = false;
+        videoPlane.scale.setScalar(calibRef.current.scale);
+        planeRef.current = videoPlane;
+        anchor.group.add(videoPlane);
+
+        // Fix the plane aspect if video metadata loads after construction.
+        _v.addEventListener("loadedmetadata", () => {
+          if (!planeRef.current || !_v.videoWidth || !_v.videoHeight) return;
+          planeRef.current.geometry = new THREE.PlaneGeometry(
+            1,
+            _v.videoHeight / _v.videoWidth,
+          );
+        });
+      }
 
       // ADDED: Verbose tracking logs
       anchor.onTargetFound = () => {
@@ -188,7 +282,19 @@ export function DemoARScene() {
 
       log("Step 4/4: calling mindarThree.start()...");
       await mindarThree.start();
-      renderer.setAnimationLoop(() => renderer.render(scene, camera));
+            renderer.setAnimationLoop(() => {
+        const p = planeRef.current;
+        if (p) {
+          const c = calibRef.current;
+          p.position.set(c.x, c.y, c.z);
+          p.rotation.set(0, 0, THREE.MathUtils.degToRad(c.rot));
+          p.scale.setScalar(c.scale);
+          p.visible =
+            statusRef.current === "revealing" ||
+            statusRef.current === "video";
+        }
+        renderer.render(scene, camera);
+      });
       log("MindAR started — scanning...");
       setStatus("scanning");
     } catch (err) {
@@ -228,15 +334,25 @@ export function DemoARScene() {
     }
   }, [log, startRevealSequence, clearRevealTimers]);
 
-  // Autoplay the video once we transition to the video screen.
-  useEffect(() => {
-    if (status === "video" && videoRef.current) {
-      videoRef.current.play().catch(() => {
-        // Autoplay may be blocked until a user gesture — the inline
-        // controls let them start it manually.
-      });
-    }
-  }, [status]);
+    // The in-frame video plays through the hidden <video> created in startAR
+  // (gesture-backed autoplay). Tune the 3D plane so the video lands exactly
+  // inside your printed picture frame; persisted to localStorage.
+  const nudge = (field: keyof Calib, delta: number) => {
+    const cur = calibRef.current;
+    const next: Calib = {
+      x: field === "x" ? cur.x + delta : cur.x,
+      y: field === "y" ? cur.y + delta : cur.y,
+      z: field === "z" ? cur.z + delta : cur.z,
+      scale: field === "scale" ? cur.scale + delta : cur.scale,
+      rot: field === "rot" ? cur.rot + delta : cur.rot,
+    };
+    calibRef.current = next;
+    saveCalib(next);
+  };
+  const resetCalib = () => {
+    calibRef.current = { ...DEFAULT_CALIB };
+    saveCalib({ ...DEFAULT_CALIB });
+  };
 
   useEffect(() => {
     return () => {
@@ -311,45 +427,33 @@ export function DemoARScene() {
         </div>
       )}
 
-      {/* ── Full-screen video player ──────────────────────────────────── */}
-      {status === "video" && (
-        <div className="absolute inset-0 z-10 flex flex-col bg-black">
-          <video
-            ref={videoRef}
-            src="/demo-video.mp4"
-            controls={videoEnded}
-            autoPlay
-            playsInline
-            onEnded={() => setVideoEnded(true)}
-            className="h-full w-full bg-black object-contain"
-          />
-
-          {/* Tap overlay if autoplay was blocked */}
-          {!videoEnded && (
-            <button
-              type="button"
-              onClick={() => {
-                videoRef.current?.play();
-                setVideoEnded(false);
-              }}
-              className="absolute inset-0 flex items-center justify-center bg-black/30"
-              aria-label="Play video"
-            >
-              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 text-black">
-                <Play className="ml-1 h-7 w-7" />
-              </span>
-            </button>
-          )}
-
+            {/* ── Video playing inside the picture frame ───────────────────── */}
+      {(status === "video" || status === "revealing") && (
+        <>
+          {/* Bottom controls: replay / sound / scan again */}
           <div className="absolute bottom-6 left-0 right-0 z-20 flex justify-center gap-3">
             <button
               onClick={() => {
-                videoRef.current?.play();
-                setVideoEnded(false);
+                const v = videoElRef.current;
+                if (v) {
+                  v.currentTime = 0;
+                  void v.play();
+                }
               }}
               className="flex items-center gap-2 rounded-full bg-white/90 px-5 py-2.5 text-sm font-semibold text-black shadow-lg active:scale-95"
             >
               <RotateCcw className="h-4 w-4" /> Replay
+            </button>
+            <button
+              onClick={() => {
+                const v = videoElRef.current;
+                if (!v) return;
+                v.muted = !v.muted;
+                void v.play();
+              }}
+              className="flex items-center gap-2 rounded-full bg-black/60 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur active:scale-95"
+            >
+              <Volume2 className="h-4 w-4" /> Sound
             </button>
             <button
               onClick={resetToIdle}
@@ -358,8 +462,82 @@ export function DemoARScene() {
               <ScanLine className="h-4 w-4" /> Scan again
             </button>
           </div>
-        </div>
+
+          {/* On-device calibration: nudge the video to fit YOUR frame */}
+          <div className="absolute bottom-24 right-3 z-20 flex flex-col gap-1 rounded-xl bg-black/60 px-2.5 py-2 text-[10px] text-white/90 backdrop-blur">
+            <p className="px-0.5 pt-0.5 opacity-70">Fit video in frame</p>
+            <div className="grid grid-cols-4 gap-0.5">
+              <button
+                onClick={() => nudge("y", 0.02)}
+                className="rounded-md bg-white/10 px-1 py-1 text-xs"
+              >
+                ↑ up
+              </button>
+              <button
+                onClick={() => nudge("scale", 0.04)}
+                className="rounded-md bg-white/10 px-1 py-1 text-xs"
+              >
+                ＋ size
+              </button>
+              <button
+                onClick={() => nudge("rot", -2)}
+                className="rounded-md bg-white/10 px-1 py-1 text-xs"
+              >
+                ⟲ rot
+              </button>
+              <button
+                onClick={() => nudge("x", -0.02)}
+                className="rounded-md bg-white/10 px-1 py-1 text-xs"
+              >
+                ← left
+              </button>
+              <button
+                onClick={() => nudge("x", 0.02)}
+                className="rounded-md bg-white/10 px-1 py-1 text-xs"
+              >
+                → right
+              </button>
+              <button
+                onClick={() => nudge("rot", 2)}
+                className="rounded-md bg-white/10 px-1 py-1 text-xs"
+              >
+                ⟳ rot
+              </button>
+              <button
+                onClick={() => nudge("y", -0.02)}
+                className="rounded-md bg-white/10 px-1 py-1 text-xs"
+              >
+                ↓ down
+              </button>
+              <button
+                onClick={() => nudge("scale", -0.04)}
+                className="rounded-md bg-white/10 px-1 py-1 text-xs"
+              >
+                − size
+              </button>
+              <button
+                onClick={() => nudge("z", 0.01)}
+                className="rounded-md bg-white/10 px-1 py-1 text-xs col-span-2"
+              >
+                Z +pop
+              </button>
+              <button
+                onClick={() => nudge("z", -0.01)}
+                className="rounded-md bg-white/10 px-1 py-1 text-xs col-span-2"
+              >
+                Z −recess
+              </button>
+              <button
+                onClick={resetCalib}
+                className="col-span-4 rounded-md bg-accent/80 px-1 py-1 text-xs font-semibold text-black"
+              >
+                Reset calibration
+              </button>
+            </div>
+          </div>
+        </>
       )}
+            {/* in-frame video plane renders inside the block above */}
 
       {/* ── Full-screen overlay (idle / starting / errors) ─────────────── */}
       {isOverlayVisible && (
