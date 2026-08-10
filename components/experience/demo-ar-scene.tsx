@@ -20,12 +20,10 @@ export function DemoARScene() {
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [cameras, setCameras] = useState<string[]>([]);
-  const [debugLines, setDebugLines] = useState<string[]>([]);
 
-  // On-screen log helper — mirrors to console AND shows on the phone screen
+  // Minimal console-only logger (kept for diagnostics, hidden in production UI)
   const log = useCallback((msg: string) => {
     console.log("[DemoARScene]", msg);
-    setDebugLines(prev => [...prev.slice(-30), msg]);
   }, []);
 
 
@@ -34,7 +32,6 @@ export function DemoARScene() {
     setStatus("starting");
     setErrorMessage(null);
     setCameras([]);
-    setDebugLines([]);
     log("AR starting...");
 
     try {
@@ -189,23 +186,12 @@ export function DemoARScene() {
         </div>
       )}
 
-      {/* ── Target found — cube is displayed ───────────────────────────── */}
+      {/* ── Target found — AR overlay is displayed ─────────────────────── */}
       {status === "found" && (
         <div className="pointer-events-none absolute bottom-10 left-0 right-0 z-10 flex justify-center">
           <p className="rounded-full bg-green-600/70 px-4 py-2 text-sm text-white backdrop-blur">
             Target found! 🎯
           </p>
-        </div>
-      )}
-
-      {/* ── On-screen debug panel (shows logs without needing devtools) ── */}
-      {debugLines.length > 0 && (
-        <div className="pointer-events-none absolute left-0 right-0 top-0 z-20 max-h-40 overflow-y-auto bg-black/80 p-2 text-left font-mono text-[9px] leading-tight text-green-400">
-          {debugLines.map((l, i) => (
-            <div key={i} className="whitespace-pre-wrap break-words">
-              {l}
-            </div>
-          ))}
         </div>
       )}
 
