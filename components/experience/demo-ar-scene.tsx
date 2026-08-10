@@ -85,6 +85,9 @@ export function DemoARScene() {
       const { renderer, scene, camera } = mindarThree;
       console.log("[DemoARScene] Step 3/4: MindARThree constructed");
 
+      // ADDED: Log target loading
+      console.log("[DemoARScene] Attempting to load targets from:", "/targets.mind");
+
       const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
       scene.add(light);
       const geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -93,8 +96,15 @@ export function DemoARScene() {
       const anchor = mindarThree.addAnchor(0);
       anchor.group.add(cube);
 
-      anchor.onTargetFound = () => setStatus("found");
-      anchor.onTargetLost = () => setStatus("scanning");
+      // ADDED: Verbose tracking logs
+      anchor.onTargetFound = () => {
+        console.log("[DemoARScene] >>> TRACKING: Target found!");
+        setStatus("found");
+      };
+      anchor.onTargetLost = () => {
+        console.log("[DemoARScene] >>> TRACKING: Target lost.");
+        setStatus("scanning");
+      };
 
       console.log("[DemoARScene] Step 4/4: calling mindarThree.start()…");
       await mindarThree.start();
