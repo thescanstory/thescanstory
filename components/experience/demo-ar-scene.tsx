@@ -109,7 +109,7 @@ export function DemoARScene() {
       } else if (typeof err === "string") {
         message = err;
       } else if (err && typeof err === "object") {
-        const obj = err as any;
+        const obj = err as { message?: string; name?: string; code?: string };
         message = obj.message || obj.name || obj.code || JSON.stringify(err);
       }
 
@@ -118,8 +118,9 @@ export function DemoARScene() {
           const stream = await navigator.mediaDevices.getUserMedia({ video: true });
           stream.getTracks().forEach(t => t.stop());
           message = "Initialization failed (camera is accessible but MindAR could not start).";
-        } catch (camErr: any) {
-          message = camErr.message || camErr.name || "Camera access failed";
+        } catch (camErr) {
+          const errObj = camErr as { message?: string; name?: string };
+          message = errObj.message || errObj.name || "Camera access failed";
         }
       }
 
@@ -224,7 +225,7 @@ export function DemoARScene() {
             <>
               <div className="space-y-4 max-w-xs">
                 <p className="text-sm text-white/70">
-                  We couldn't find a suitable camera. This often happens on
+                  We couldn&apos;t find a suitable camera. This often happens on
                   desktops without a webcam or when another app is using the camera.
                 </p>
                 {cameras.length > 0 && (

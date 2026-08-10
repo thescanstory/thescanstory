@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useState } from "react";
 
 export default function CompileDemoPage() {
   const [status, setStatus] = useState("Click the button to start compilation");

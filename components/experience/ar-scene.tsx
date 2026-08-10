@@ -242,7 +242,7 @@ export function ARScene({
                   {welcomeMessage ?? "Your AR experience is ready ✨"}
                 </p>
                 <p className="text-sm text-white/60 leading-relaxed">
-                  Point your camera at the printed photo and we'll play your
+                  Point your camera at the printed photo and we&apos;ll play your
                   personal video right over it — no QR code needed.
                 </p>
               </div>
