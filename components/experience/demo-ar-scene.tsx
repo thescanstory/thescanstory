@@ -15,33 +15,42 @@ type Status =
   | "error";
 
 export function DemoARScene() {
-  console.log("[DemoARScene] Component rendering...");
   const containerRef = useRef<HTMLDivElement>(null);
   const mindarRef = useRef<MindARThree | null>(null);
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [cameras, setCameras] = useState<string[]>([]);
+  const [debugLines, setDebugLines] = useState<string[]>([]);
+
+  // On-screen log helper — mirrors to console AND shows on the phone screen
+  const log = useCallback((msg: string) => {
+    console.log("[DemoARScene]", msg);
+    setDebugLines(prev => [...prev.slice(-30), msg]);
+  }, []);
+
 
   const startAR = useCallback(async () => {
     if (!containerRef.current) return;
     setStatus("starting");
     setErrorMessage(null);
     setCameras([]);
+    setDebugLines([]);
+    log("AR starting...");
 
     try {
       if (mindarRef.current) {
-        console.log("[DemoARScene] Stopping previous instance...");
+        log("Stopping previous instance...");
         try {
           mindarRef.current.stop();
-        } catch (e) {
-          console.warn("[DemoARScene] Error calling stop():", e);
+        } catch {
+          log("Error calling stop()");
         }
         const { renderer } = mindarRef.current;
         if (renderer) renderer.setAnimationLoop(null);
         if (containerRef.current) containerRef.current.innerHTML = "";
       }
-    } catch (e) {
-      console.warn("[DemoARScene] Error cleaning up previous instance:", e);
+    } catch {
+      log("Error cleaning up previous instance");
     }
 
     try {
@@ -60,6 +69,7 @@ export function DemoARScene() {
         throw new Error("WebGL not available. Please enable hardware acceleration in your browser.");
       }
       console.log("[DemoARScene] Step 1/4: WebGL OK");
+      log("Step 1/4: WebGL OK");
 
       // Step 2: Device Enumeration
       let foundCameras: string[] = [];
@@ -69,13 +79,13 @@ export function DemoARScene() {
           .filter(d => d.kind === "videoinput")
           .map(d => d.label || `Unknown Camera (${d.deviceId.slice(0, 5)})`);
         setCameras(foundCameras);
-        console.log("[DemoARScene] Cameras found:", foundCameras);
-      } catch (e) {
-        console.warn("[DemoARScene] Could not enumerate devices:", e);
+        log(`Cameras found: ${foundCameras.length}`);
+      } catch {
+        log("Could not enumerate devices");
       }
 
       const { MindARThree } = await import("mind-ar/dist/mindar-image-three.prod.js");
-      console.log("[DemoARScene] Step 2/4: MindAR module loaded");
+      log("Step 2/4: MindAR module loaded");
 
       const mindarThree = new MindARThree({
         container: containerRef.current,
@@ -84,10 +94,10 @@ export function DemoARScene() {
       mindarRef.current = mindarThree;
 
       const { renderer, scene, camera } = mindarThree;
-      console.log("[DemoARScene] Step 3/4: MindARThree constructed");
+      log("Step 3/4: MindARThree constructed");
 
       // ADDED: Log target loading
-      console.log("[DemoARScene] Attempting to load targets from:", "/targets.mind");
+      log("Attempting to load targets from: /targets.mind");
 
       const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
       scene.add(light);
@@ -99,20 +109,21 @@ export function DemoARScene() {
 
       // ADDED: Verbose tracking logs
       anchor.onTargetFound = () => {
-        console.log("[DemoARScene] >>> TRACKING: Target found!");
+        log(">>> TRACKING: Target found!");
         setStatus("found");
       };
       anchor.onTargetLost = () => {
-        console.log("[DemoARScene] >>> TRACKING: Target lost.");
+        log(">>> TRACKING: Target lost.");
         setStatus("scanning");
       };
 
-      console.log("[DemoARScene] Step 4/4: calling mindarThree.start()…");
+      log("Step 4/4: calling mindarThree.start()...");
       await mindarThree.start();
       renderer.setAnimationLoop(() => renderer.render(scene, camera));
+      log("MindAR started — scanning...");
       setStatus("scanning");
     } catch (err) {
-      console.error("[DemoARScene] MindAR start failed:", err);
+      log("INIT FAILED: " + (err instanceof Error ? err.message : String(err)));
       
       let message = "";
       if (err instanceof Error) {
@@ -146,7 +157,7 @@ export function DemoARScene() {
         setErrorMessage(message);
       }
     }
-  }, []);
+  }, [log]);
 
   useEffect(() => {
     return () => {
@@ -178,6 +189,18 @@ export function DemoARScene() {
           </p>
         </div>
       )}
+
+      {/* ── On-screen debug panel (shows logs without needing devtools) ── */}
+      {debugLines.length > 0 && (
+        <div className="pointer-events-none absolute left-0 right-0 top-0 z-20 max-h-40 overflow-y-auto bg-black/80 p-2 text-left font-mono text-[9px] leading-tight text-green-400">
+          {debugLines.map((l, i) => (
+            <div key={i} className="whitespace-pre-wrap break-words">
+              {l}
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* ── Full-screen overlay (idle / starting / errors) ─────────────── */}
       {isOverlayVisible && (
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-6 bg-black px-6 text-center text-white">
