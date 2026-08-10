@@ -101,14 +101,10 @@ export function DemoARScene() {
 
       const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
       scene.add(light);
-      // Size the cube relative to target width (1 unit = target width).
-      // 1x1x1 fills the whole target/frame, so use a smaller fraction for a
-      // nicer floating cube: 0.2 = 1/5 of the target width.
-      const geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
-      const material = new THREE.MeshBasicMaterial({ color: 0x3b82f6 });
-      const cube = new THREE.Mesh(geometry, material);
+      // Keep an anchor (needed to receive onTargetFound/onTargetLost),
+      // but the visible "full-frame" blue fill is rendered as a DOM overlay
+      // in the JSX so it always matches the exact size of the visible frame.
       const anchor = mindarThree.addAnchor(0);
-      anchor.group.add(cube);
 
       // ADDED: Verbose tracking logs
       anchor.onTargetFound = () => {
@@ -174,6 +170,11 @@ export function DemoARScene() {
     <div className="relative h-screen w-screen overflow-hidden bg-black">
       {/* MindAR renders into this container once the camera starts */}
       <div ref={containerRef} className="absolute inset-0" />
+
+      {/* ── Full-frame blue fill — exactly the size of the visible frame ── */}
+      {status === "found" && (
+        <div className="pointer-events-none absolute inset-0 z-[5] bg-blue-500" />
+      )}
 
       {/* ── Scanning hint ─────────────────────────────────────────────── */}
       {status === "scanning" && (
