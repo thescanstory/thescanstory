@@ -153,6 +153,11 @@ export function DemoARScene() {
       const mindarThree = new MindARThree({
         container: containerRef.current,
         imageTargetSrc: "/targets.mind",
+        // Smooth the tracking pose to reduce shaking/wobble. MindAR's default
+        // filterBeta (1000) amplifies tiny tracking noise; lowering it keeps
+        // the One-Euro cutoff near its minimum so the overlay sits steady.
+        filterMinCF: 0.001,
+        filterBeta: 0,
       });
       mindarRef.current = mindarThree;
 
