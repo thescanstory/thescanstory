@@ -2,10 +2,11 @@
 
 import { useCallback, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Play, ScanLine } from "lucide-react";
+import { ArrowLeft, ScanLine, Volume2 } from "lucide-react";
 import * as THREE from "three";
 import { Button } from "@/components/ui/button";
 import { getCachedMedia } from "@/lib/cache/media-cache";
+import { createFrameMatte } from "@/lib/ar/frame-matte";
 import type { MindARThree } from "mind-ar/dist/mindar-image-three.prod.js";
 
 type Status =
@@ -120,7 +121,9 @@ export function ARScene({
       const video = document.createElement("video");
       video.src = videoUrl;
       video.loop = true;
-      video.muted = false;
+            // Muted so iOS allows inline autoplay the moment the target locks;
+      // tap the on-screen Sound button to unmute (gesture-backed).
+      video.muted = true;
       video.playsInline = true;
       video.crossOrigin = "anonymous";
       videoElRef.current = video;
@@ -138,18 +141,29 @@ export function ARScene({
       );
       const geometry = new THREE.PlaneGeometry(1, aspect);
       const material = new THREE.MeshBasicMaterial({ map: videoTexture });
-      const plane = new THREE.Mesh(geometry, material);
+            const plane = new THREE.Mesh(geometry, material);
+      plane.visible = false;
+      // Visible picture-frame matte "set up" around the video so playback is
+      // clearly framed on the printed photo. Sits just behind the video plane.
+      const frameMatte = createFrameMatte(1, aspect, { borderWorld: 0.1 });
+      frameMatte.visible = false;
 
       const anchor = mindarThree.addAnchor(0);
+      anchor.group.add(frameMatte);
       anchor.group.add(plane);
 
       anchor.onTargetFound = () => {
-        // Target is in frame — surface the Play button, don't auto-play
-        setStatus("target-found");
+        // Target locked → auto-play the video inside the frame (muted for iOS
+        // autoplay; tap Sound to unmute). No manual Play button required.
+        if (plane) plane.visible = true;
+        if (frameMatte) frameMatte.visible = true;
+        video.play().catch(() => {});
+        setStatus("playing");
       };
       anchor.onTargetLost = () => {
-        // If we lose the target mid-play, pause and go back to scanning
         video.pause();
+        if (plane) plane.visible = false;
+        if (frameMatte) frameMatte.visible = false;
         setStatus("scanning");
       };
 
@@ -167,10 +181,12 @@ export function ARScene({
     }
   }, [orderId, signedUrls]);
 
-  // ── play button handler ────────────────────────────────────────────────
-  const playVideo = useCallback(() => {
-    videoElRef.current?.play().catch(() => {});
-    setStatus("playing");
+    // ── unmute handler (video auto-plays muted for iOS autoplay) ─────────────
+  const unmute = useCallback(() => {
+    const v = videoElRef.current;
+    if (!v) return;
+    v.muted = false;
+    void v.play();
   }, []);
 
   // ── helpers ───────────────────────────────────────────────────────────
@@ -209,14 +225,14 @@ export function ARScene({
         </div>
       )}
 
-      {/* ── "Play Video" button — shown once target is detected ─────── */}
-      {status === "target-found" && (
-        <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+            {/* ── Unmute hint — shown once the target locks and video auto-plays ─ */}
+      {status === "playing" && (
+        <div className="absolute bottom-6 left-0 right-0 z-20 flex justify-center">
           <button
-            onClick={playVideo}
-            className="pointer-events-auto flex h-20 w-20 items-center justify-center rounded-full bg-white/20 backdrop-blur-md border-2 border-white/60 text-white shadow-2xl transition-transform active:scale-95 hover:bg-white/30"
+            onClick={unmute}
+            className="flex items-center gap-2 rounded-full bg-black/60 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur active:scale-95"
           >
-            <Play className="h-9 w-9 fill-white" />
+            <Volume2 className="h-4 w-4" /> Sound
           </button>
         </div>
       )}

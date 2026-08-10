@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { RotateCcw, ScanLine, Volume2 } from "lucide-react";
 import type { MindARThree } from "mind-ar/dist/mindar-image-three.prod.js";
 import { Logo } from "@/components/brand/logo";
+import { createFrameMatte } from "@/lib/ar/frame-matte";
 
 type Status =
   | "idle"
@@ -223,9 +224,9 @@ export function DemoARScene() {
       log("Step 3/4: MindARThree constructed");
 
       // ADDED: Log target loading
-      log("Attempting to load targets from: /targets.mind");
+            log("Attempting to load targets from: /targets.mind");
 
-            const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+      const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
       scene.add(light);
 
       // Anchor fixed to the target image. The video plane is parented to this
@@ -236,7 +237,8 @@ export function DemoARScene() {
       // lying in the target plane, sized to the video aspect. Its position /
       // scale / rotation are driven by calibRef (see the calibration panel) so
       // you can fit it precisely inside YOUR printed picture frame.
-      const _v = videoElRef.current;
+            const _v = videoElRef.current;
+      let frameMatte: THREE.Mesh | null = null;
       if (_v) {
         const tex = new THREE.VideoTexture(_v);
         tex.minFilter = THREE.LinearFilter;
@@ -259,13 +261,39 @@ export function DemoARScene() {
         planeRef.current = videoPlane;
         anchor.group.add(videoPlane);
 
-        // Fix the plane aspect if video metadata loads after construction.
+        // Visible picture-frame matte "set up" around the video so playback is
+        // clearly framed on the target. Sits just behind the video plane.
+        const makeMatte = (aspect: number) => {
+          const m = createFrameMatte(1, aspect, { borderWorld: 0.08 });
+          m.visible = false;
+          m.scale.setScalar(calibRef.current.scale);
+          anchor.group.add(m);
+          return m;
+        };
+        frameMatte = makeMatte(baseAspect);
+
+        // Fix the plane geometry (and rebuild the matte) if video metadata
+        // loads after construction — width/height are often 0 at creation.
         _v.addEventListener("loadedmetadata", () => {
-          if (!planeRef.current || !_v.videoWidth || !_v.videoHeight) return;
-          planeRef.current.geometry = new THREE.PlaneGeometry(
-            1,
-            _v.videoHeight / _v.videoWidth,
-          );
+          if (!_v.videoWidth || !_v.videoHeight) return;
+          const a = _v.videoHeight / _v.videoWidth;
+          if (planeRef.current) {
+            planeRef.current.geometry = new THREE.PlaneGeometry(1, a);
+          }
+          const replacement = makeMatte(a);
+          if (frameMatte) {
+            replacement.visible = frameMatte.visible;
+            replacement.scale.copy(frameMatte.scale);
+            replacement.position.copy(frameMatte.position);
+            replacement.rotation.copy(frameMatte.rotation);
+            anchor.group.remove(frameMatte);
+            frameMatte.geometry.dispose();
+            (frameMatte.material as THREE.Material).dispose();
+          } else {
+            replacement.visible = false;
+            replacement.scale.setScalar(calibRef.current.scale);
+          }
+          frameMatte = replacement;
         });
       }
 
@@ -282,16 +310,24 @@ export function DemoARScene() {
 
       log("Step 4/4: calling mindarThree.start()...");
       await mindarThree.start();
-            renderer.setAnimationLoop(() => {
+                  renderer.setAnimationLoop(() => {
         const p = planeRef.current;
+        const c = calibRef.current;
         if (p) {
-          const c = calibRef.current;
-          p.position.set(c.x, c.y, c.z);
+          // +0.001 puts the video plane just ahead of the frame matte so the
+          // two never z-fight through the matte's transparent window.
+          p.position.set(c.x, c.y, c.z + 0.001);
           p.rotation.set(0, 0, THREE.MathUtils.degToRad(c.rot));
           p.scale.setScalar(c.scale);
           p.visible =
             statusRef.current === "revealing" ||
             statusRef.current === "video";
+        }
+        if (frameMatte) {
+          frameMatte.position.set(c.x, c.y, c.z);
+          frameMatte.rotation.set(0, 0, THREE.MathUtils.degToRad(c.rot));
+          frameMatte.scale.setScalar(c.scale);
+          frameMatte.visible = p ? p.visible : false;
         }
         renderer.render(scene, camera);
       });
