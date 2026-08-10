@@ -170,14 +170,16 @@ export function DemoARScene() {
       const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
       scene.add(light);
       // In MindAR anchor space, 1 unit = the target image's width/height.
-      // A 1x1x1 box therefore exactly covers (and aligns with) the target's
-      // on-screen footprint, tracking it as the camera moves.
-      const geometry = new THREE.BoxGeometry(1, 1, 1);
+      // Use a THIN plate (not a bulky cube): it lies flat in the target plane,
+      // so it reads as an aligned frame over the image and doesn't wobble the
+      // way the side/top faces of a full 1x1x1 cube do when viewed at an angle.
+      const geometry = new THREE.BoxGeometry(1, 1, 0.02);
       const material = new THREE.MeshBasicMaterial({
         color: 0x3b82f6,
         transparent: true,
         opacity: 0.4,
         depthWrite: false,
+        side: THREE.DoubleSide,
       });
       const box = new THREE.Mesh(geometry, material);
       const anchor = mindarThree.addAnchor(0);
