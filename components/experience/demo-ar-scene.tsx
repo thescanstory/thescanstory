@@ -255,14 +255,11 @@ export function DemoARScene() {
 
   return (
     <div className="relative z-0 h-full w-full overflow-hidden bg-black text-white">
-      {/* MindAR renders the live camera + aligned box here */}
-      <div
-        ref={containerRef}
-        className={
-          "absolute inset-0 transition-[filter,transform] duration-700 ease-in-out " +
-          (status === "revealing" ? "scale-110 blur-2xl" : "scale-100 blur-0")
-        }
-      />
+      {/* MindAR renders the live camera here. IMPORTANT: no CSS filter/transform
+          on this container — a filter on a <video> ancestor breaks the camera
+          feed (renders black) on iOS Safari. The blur-out is handled by the
+          black fade veil below instead of a real blur filter. */}
+      <div ref={containerRef} className="absolute inset-0" />
 
       {/* Fade veil that smooths the hand-off into the video */}
       <div
