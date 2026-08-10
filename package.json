@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": "20.x"
+    "node": "24.x"
   },
   "scripts": {
     "dev": "next dev",
@@ -51,6 +51,9 @@
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.150.1",
     "zod": "^4.4.3"
+  },
+  "overrides": {
+    "canvas": "3.2.3"
   },
   "devDependencies": {
     "@types/ffprobe-static": "^2.0.3",
