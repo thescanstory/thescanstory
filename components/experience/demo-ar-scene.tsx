@@ -269,17 +269,24 @@ export function DemoARScene() {
         }
       />
 
-      {/* ── Scanning overlay ──────────────────────────────────────────── */}
+            {/* ── Scanning overlay ──────────────────────────────────────────── */}
       {status === "scanning" && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center">
-          <div className="relative flex h-44 w-44 items-center justify-center">
-            <span className="absolute left-0 top-0 h-9 w-9 border-l-2 border-t-2 border-accent/80 rounded-tl animate-pulse" />
-            <span className="absolute right-0 top-0 h-9 w-9 border-r-2 border-t-2 border-accent/80 rounded-tr animate-pulse" />
-            <span className="absolute bottom-0 left-0 h-9 w-9 border-b-2 border-l-2 border-accent/80 rounded-bl animate-pulse" />
-            <span className="absolute bottom-0 right-0 h-9 w-9 border-b-2 border-r-2 border-accent/80 rounded-br animate-pulse" />
-            <ScanLine className="h-12 w-12 text-white/50" />
+        <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center px-6 text-center">
+          <div className="relative flex h-[64vw] w-[64vw] max-h-[340px] max-w-[340px] items-center justify-center">
+            {/* vignette that darkens outside the frame to draw the eye inward */}
+            <div className="absolute inset-0 rounded-3xl shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]" />
+            {/* bright on-target frame */}
+            <div className="absolute inset-0 rounded-[1.6rem] border-2 border-white/80" />
+            <div className="absolute inset-[6px] rounded-[1.2rem] border-2 border-accent" />
+            {/* accent corner brackets */}
+            <span className="absolute left-0 top-0 h-9 w-9 border-l-4 border-t-4 border-accent rounded-tl-3xl" />
+            <span className="absolute right-0 top-0 h-9 w-9 border-r-4 border-t-4 border-accent rounded-tr-3xl" />
+            <span className="absolute bottom-0 left-0 h-9 w-9 border-b-4 border-l-4 border-accent rounded-bl-3xl" />
+            <span className="absolute bottom-0 right-0 h-9 w-9 border-b-4 border-r-4 border-accent rounded-br-3xl" />
           </div>
-          <p className="mt-6 text-sm text-white/80">Point camera at the target image…</p>
+          <p className="mt-6 max-w-[280px] text-sm text-white/85">
+            Point the camera at the target image to scan.
+          </p>
         </div>
       )}
 
