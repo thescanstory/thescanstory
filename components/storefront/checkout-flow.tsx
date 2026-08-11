@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,6 +45,7 @@ export function CheckoutFlow({
   const [otpVerified, setOtpVerified] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mockBanner, setMockBanner] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const form = useForm<ShippingInput>({
     resolver: zodResolver(shippingSchema),
@@ -51,7 +53,19 @@ export function CheckoutFlow({
   });
 
   useEffect(() => {
-    setSessionId(localStorage.getItem(`scan-story-session-${productId}`));
+    const sid = localStorage.getItem(`scan-story-session-${productId}`);
+    setSessionId(sid);
+    
+    if (sid) {
+      fetch(`/api/session/${sid}`)
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data?.photo?.previewUrl) {
+            setPreviewUrl(data.photo.previewUrl);
+          }
+        })
+        .catch(() => {});
+    }
   }, [productId]);
 
   const total =
@@ -345,9 +359,33 @@ export function CheckoutFlow({
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 
+        <div className="rounded-xl border bg-slate-50 p-4">
+          <h2 className="text-lg font-medium mb-4">Order Summary</h2>
+          <div className="flex items-start gap-4">
+            <div className="relative h-20 w-20 overflow-hidden rounded-lg border bg-white shadow-sm shrink-0">
+              {previewUrl ? (
+                <Image src={previewUrl} alt="Your uploaded photo" fill className="object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-muted text-xs text-muted-foreground text-center px-1">
+                  No photo
+                </div>
+              )}
+            </div>
+            <div className="flex-1 space-y-1">
+              <p className="font-medium text-primary">{productName}</p>
+              <p className="text-sm text-muted-foreground">With custom AR video message</p>
+              {paymentMethod === "cod" && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  + {formatPaise(codHandlingFeePaise)} COD handling fee
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
         <div className="flex items-center justify-between border-t pt-4">
           <div>
-            <p className="text-sm text-muted-foreground">{productName}</p>
+            <p className="text-sm text-muted-foreground">Total</p>
             <p className="gradient-text text-xl font-semibold">{formatPaise(total)}</p>
           </div>
           <Button type="submit" size="lg" disabled={step === "processing" || !sessionId}>

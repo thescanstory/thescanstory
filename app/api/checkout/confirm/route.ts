@@ -92,7 +92,12 @@ export async function POST(request: Request) {
         }
       }
 
-      const customer = await findOrCreateCustomer({ name, email, phone });
+      const customer = await findOrCreateCustomer({
+        name,
+        email,
+        phone,
+        address: { addressLine, city, pin },
+      });
 
       const order = await createOrder({
         sessionId,

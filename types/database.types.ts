@@ -41,6 +41,7 @@ export type Database = {
     Tables: {
       customers: {
         Row: {
+          address: Json | null
           created_at: string
           email: string
           id: string
@@ -48,6 +49,7 @@ export type Database = {
           phone: string
         }
         Insert: {
+          address?: Json | null
           created_at?: string
           email: string
           id?: string
@@ -55,6 +57,7 @@ export type Database = {
           phone: string
         }
         Update: {
+          address?: Json | null
           created_at?: string
           email?: string
           id?: string
