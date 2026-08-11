@@ -16,12 +16,16 @@ export function MenuScreen({
   body,
   message,
   photoUrl,
+  onScanClick,
+  onGameClick,
 }: {
   slug: string;
   heading: string;
   body: string;
   message: string;
   photoUrl: string;
+  onScanClick?: () => void;
+  onGameClick?: () => void;
 }) {
   const router = useRouter();
   const [messageOpen, setMessageOpen] = useState(false);
@@ -76,7 +80,7 @@ export function MenuScreen({
         >
           {/* Card 1: Launch AR Scan Portal */}
           <button
-            onClick={() => router.push(`/experience/${slug}`)}
+            onClick={onScanClick ? onScanClick : () => router.push(`/experience/${slug}`)}
             className="flex w-full items-center gap-4 rounded-2xl bg-white border border-secondary shadow-sm p-4 text-left hover:shadow-md transition-all active:scale-[0.98]"
           >
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-secondary text-accent border border-accent/20">
@@ -114,7 +118,7 @@ export function MenuScreen({
 
           {/* Card 3: Tap-To-Reveal Photowall */}
           <button
-            onClick={() => router.push(`/experience/${slug}/game`)}
+            onClick={onGameClick ? onGameClick : () => router.push(`/experience/${slug}/game`)}
             className="flex w-full items-center gap-4 rounded-2xl bg-white border border-secondary shadow-sm p-4 text-left hover:shadow-md transition-all active:scale-[0.98]"
           >
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-secondary text-accent border border-accent/20">

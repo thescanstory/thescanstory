@@ -15,10 +15,12 @@ export function PhotowallGame({
   slug,
   photoUrl,
   heading,
+  onBackClick,
 }: {
   slug: string;
   photoUrl: string;
   heading: string;
+  onBackClick?: () => void;
 }) {
   const gridRows = 4;
   const gridCols = 3;
@@ -73,12 +75,21 @@ export function PhotowallGame({
     <div className="relative min-h-screen w-full flex flex-col items-center bg-background px-5 py-6 text-center">
       {/* Header / Back */}
       <div className="w-full max-w-md flex items-center justify-between mb-4">
-        <Link
-          href={`/experience/${slug}/story`}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-primary shadow-sm backdrop-blur active:scale-95 transition-transform"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Link>
+        {onBackClick ? (
+          <button
+            onClick={onBackClick}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-primary shadow-sm backdrop-blur active:scale-95 transition-transform"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+        ) : (
+          <Link
+            href={`/experience/${slug}/story`}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-primary shadow-sm backdrop-blur active:scale-95 transition-transform"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+        )}
         <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           Reveal Progress: {revealCount} / {totalTiles}
         </span>
@@ -161,13 +172,23 @@ export function PhotowallGame({
                 >
                   Play Again
                 </Button>
-                <Button
-                  size="sm"
-                  asChild
-                  className="rounded-full bg-accent text-white font-semibold hover:bg-accent/95"
-                >
-                  <Link href={`/experience/${slug}/story`}>Menu</Link>
-                </Button>
+                {onBackClick ? (
+                  <Button
+                    size="sm"
+                    onClick={onBackClick}
+                    className="rounded-full bg-accent text-white font-semibold hover:bg-accent/95"
+                  >
+                    Menu
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    asChild
+                    className="rounded-full bg-accent text-white font-semibold hover:bg-accent/95"
+                  >
+                    <Link href={`/experience/${slug}/story`}>Menu</Link>
+                  </Button>
+                )}
               </div>
             </motion.div>
           )}
