@@ -1,7 +1,6 @@
-"use client";
-
 import { useEffect } from "react";
 import { motion } from "framer-motion";
+import { Logo } from "@/components/brand/logo";
 
 const AUTO_ADVANCE_MS = 3200;
 
@@ -24,33 +23,32 @@ export function FrameRevealScreen({
       type="button"
       onClick={onDone}
       aria-label="Continue"
-      className="flex min-h-screen w-full flex-col items-center justify-center gap-8 bg-background px-8"
+      className="flex min-h-screen w-full flex-col items-center justify-center bg-background px-6"
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
+        initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="gold-frame w-full max-w-[280px]"
+        className="gold-frame w-full max-w-[300px] aspect-[3/4] rounded-sm overflow-hidden"
       >
-        <div className="gold-frame-mat">
-          <div className="relative aspect-square w-full overflow-hidden bg-muted">
+        <div className="gold-frame-mat h-full w-full relative">
+          <div className="relative h-full w-full overflow-hidden bg-muted">
             {photoUrl && (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={photoUrl} alt="Your photo" className="h-full w-full object-cover" />
             )}
+
+            {/* Torn paper overlay at the bottom with heading and logo */}
+            <div className="torn-edge absolute bottom-0 left-0 right-0 bg-background pt-6 pb-4 px-4 flex flex-col justify-end items-center min-h-[90px]">
+              <p className="text-center font-serif text-2xl font-bold tracking-tight text-primary">
+                {heading}
+              </p>
+              <div className="absolute right-3 bottom-2 opacity-60 scale-75 transform origin-bottom-right">
+                <Logo size="sm" className="gap-0" />
+              </div>
+            </div>
           </div>
         </div>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6, duration: 0.7 }}
-        className="torn-edge w-full max-w-xs bg-white px-6 py-5 shadow-lg"
-      >
-        <p className="text-center font-serif text-3xl font-bold tracking-tight text-primary sm:text-4xl">
-          {heading}
-        </p>
       </motion.div>
     </button>
   );
