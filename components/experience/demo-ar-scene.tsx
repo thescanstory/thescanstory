@@ -439,6 +439,24 @@ export function DemoARScene() {
           <p className="mt-6 max-w-[280px] text-sm text-white/85">
             Point the camera at the target image to scan.
           </p>
+          
+          <div className="mt-8 flex flex-col items-center gap-2 rounded-xl bg-black/50 p-4 backdrop-blur">
+            <p className="text-xs font-semibold text-white/80 uppercase tracking-wider">Target Image</p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img 
+              src="https://images.unsplash.com/photo-1511895426328-dc8714191300?q=80&w=600&auto=format&fit=crop" 
+              alt="Target to scan" 
+              className="h-24 w-24 rounded-lg object-cover border border-white/20"
+            />
+            <a 
+              href="https://images.unsplash.com/photo-1511895426328-dc8714191300?q=80&w=600&auto=format&fit=crop" 
+              target="_blank" 
+              rel="noreferrer"
+              className="text-[10px] text-accent underline mt-1"
+            >
+              Open on another screen
+            </a>
+          </div>
         </div>
       )}
 
