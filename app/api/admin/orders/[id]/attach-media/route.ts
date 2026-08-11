@@ -18,8 +18,14 @@ export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  if (!(await isAdminAuthenticated())) {
+  if (!(await isAdminAuthenticated(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Validate storage bucket against allowed values
+  const ALLOWED_BUCKETS = ["uploads-temp", "uploads-active"];
+  if (!ALLOWED_BUCKETS.includes(storageBucket)) {
+    return NextResponse.json({ error: "Invalid storage bucket" }, { status: 400 });
   }
 
   const body = await request.json();

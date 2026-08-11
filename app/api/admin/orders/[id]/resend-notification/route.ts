@@ -10,7 +10,7 @@ export async function POST(
   _request: Request,
   { params }: { params: { id: string } }
 ) {
-  if (!(await isAdminAuthenticated())) {
+  if (!(await isAdminAuthenticated(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

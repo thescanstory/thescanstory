@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { isSmsConfigured, sendShippedSms } from "@/lib/sms/sms";
+import { logger } from "@/lib/logger";
 
 const PLACEHOLDER_MARKERS = ["", "re_xxxxxxxxxxxx"];
 const FROM_ADDRESS = "The Scan Story <onboarding@resend.dev>";
@@ -33,13 +34,15 @@ function renderShippedEmail(params: { customerName?: string; experienceUrl: stri
 async function sendSms(params: { phone: string; experienceUrl: string }) {
   if (!isSmsConfigured()) {
     console.log(`[SMS STUB] Would send experience link to ${params.phone}: ${params.experienceUrl}`);
+    logger.info("SMS notification (stub mode)", { phone: params.phone, experienceUrl: params.experienceUrl });
     return;
   }
 
   try {
     await sendShippedSms(params.phone, params.experienceUrl);
+    logger.info("SMS notification sent", { phone: params.phone });
   } catch (err) {
-    console.error(`[SMS FAILED] ${params.phone}:`, err);
+    logger.error(`[SMS FAILED] ${params.phone}:`, err);
   }
 }
 
@@ -55,19 +58,26 @@ export async function sendShippedNotification(params: {
     console.log(
       `[EMAIL STUB] Would send experience link to ${params.email}: ${params.experienceUrl}`
     );
+    logger.info("Email notification (stub mode)", { email: params.email, experienceUrl: params.experienceUrl });
     return;
   }
 
-  const { subject, html } = renderShippedEmail(params);
-  const client = getClient();
-  const { error } = await client.emails.send({
-    from: FROM_ADDRESS,
-    to: params.email,
-    subject,
-    html,
-  });
+  try {
+    const { subject, html } = renderShippedEmail(params);
+    const client = getClient();
+    const { error } = await client.emails.send({
+      from: FROM_ADDRESS,
+      to: params.email,
+      subject,
+      html,
+    });
 
-  if (error) {
-    console.error(`[EMAIL FAILED] ${params.email}:`, error);
+    if (error) {
+      logger.error(`[EMAIL FAILED] ${params.email}:`, error);
+    } else {
+      logger.info("Email notification sent", { email: params.email });
+    }
+  } catch (error) {
+    logger.error("Error sending email notification", error, { email: params.email });
   }
 }
