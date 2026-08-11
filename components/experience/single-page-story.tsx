@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { ScanLine, Grid3X3, ArrowRight } from "lucide-react";
+import { ScanLine, Grid3X3, ArrowRight, ShoppingBag } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 
 function MenuButton({
@@ -40,6 +40,7 @@ export function SinglePageStory({
   slug,
   onScanClick,
   onGameClick,
+  showShopButton,
 }: {
   photoUrl: string;
   heading: string;
@@ -47,6 +48,7 @@ export function SinglePageStory({
   slug: string;
   onScanClick?: () => void;
   onGameClick?: () => void;
+  showShopButton?: boolean;
 }) {
   const router = useRouter();
 
@@ -132,6 +134,19 @@ export function SinglePageStory({
           subtitle="Discover hidden memories"
           onClick={handleGame} 
         />
+        {showShopButton && (
+          <div className="mt-4 border-t border-primary/10 pt-6">
+            <h2 className="text-center font-serif text-xl text-primary/80 mb-4">Want Your Own?</h2>
+            <MenuButton 
+              icon={ShoppingBag}
+              title="CREATE YOUR OWN" 
+              subtitle="Turn your photo into a memory"
+              onClick={() => {
+                document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth' });
+              }} 
+            />
+          </div>
+        )}
       </motion.div>
     </div>
   );

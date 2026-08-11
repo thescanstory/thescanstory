@@ -7,7 +7,7 @@ const DEMO_HEADING = "Arav & Arya";
 const DEMO_BODY = "Happy Birthday, Arya!\n\nYou bring so much joy to everyone around you. Wishing you a wonderful day filled with love and laughter.\n\nYours always,\nArav";
 const DEMO_PHOTO_URL = "https://images.unsplash.com/photo-1511895426328-dc8714191300?q=80&w=600&auto=format&fit=crop";
 
-export function DemoFlow() {
+export function DemoFlow({ showShopButton }: { showShopButton?: boolean } = {}) {
   const router = useRouter();
 
   return (
@@ -16,6 +16,7 @@ export function DemoFlow() {
       heading={DEMO_HEADING}
       body={DEMO_BODY}
       photoUrl={DEMO_PHOTO_URL}
+      showShopButton={showShopButton}
       onScanClick={() => router.push("/demo/ar")}
       onGameClick={() => router.push("/demo/game")}
     />
