@@ -24,7 +24,7 @@ export async function isAdminAuthenticated(request?: Request): Promise<boolean> 
     // Rate limiting for admin API routes
     if (request) {
       const identifier = getRateLimitIdentifier(request);
-      const rateLimit = adminRateLimiter.check(identifier);
+      const rateLimit = await adminRateLimiter.check(identifier);
 
       if (!rateLimit.allowed) {
         logger.warn("Admin rate limit exceeded", {

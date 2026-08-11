@@ -22,12 +22,6 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Validate storage bucket against allowed values
-  const ALLOWED_BUCKETS = ["uploads-temp", "uploads-active"];
-  if (!ALLOWED_BUCKETS.includes(storageBucket)) {
-    return NextResponse.json({ error: "Invalid storage bucket" }, { status: 400 });
-  }
-
   const body = await request.json();
   const { type, storageBucket, storagePath, mindTargetPath } = body as {
     type: MediaType;
@@ -35,6 +29,12 @@ export async function POST(
     storagePath: string;
     mindTargetPath?: string;
   };
+
+  // Validate storage bucket against allowed values
+  const ALLOWED_BUCKETS = ["uploads-temp", "uploads-active"];
+  if (!ALLOWED_BUCKETS.includes(storageBucket)) {
+    return NextResponse.json({ error: "Invalid storage bucket" }, { status: 400 });
+  }
 
   if (!type || !storageBucket || !storagePath) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });

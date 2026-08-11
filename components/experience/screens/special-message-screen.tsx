@@ -23,8 +23,7 @@ export function SpecialMessageScreen({
       {CORNER_HEARTS.map((position, i) => (
         <Heart
           key={position}
-          className={`absolute h-7 w-7 text-primary/25 ${position}`}
-          fill="currentColor"
+          className={`absolute h-8 w-8 text-accent fill-accent/90 filter drop-shadow-sm ${position}`}
           style={{ animationDelay: `${i * 150}ms` }}
         />
       ))}

@@ -4,7 +4,7 @@ import { ordersToShippingCsv } from "@/lib/utils/csv";
 import { isAdminAuthenticated } from "@/lib/auth/require-admin";
 
 export async function POST(request: Request) {
-  if (!(await isAdminAuthenticated())) {
+  if (!(await isAdminAuthenticated(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

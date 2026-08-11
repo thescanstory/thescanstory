@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   try {
     // Rate limiting
     const identifier = getRateLimitIdentifier(request);
-    const rateLimit = uploadRateLimiter.check(identifier);
+    const rateLimit = await uploadRateLimiter.check(identifier);
 
     if (!rateLimit.allowed) {
       logger.warn("Upload rate limit exceeded", { identifier });

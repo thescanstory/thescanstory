@@ -3,6 +3,8 @@ import { Caveat, Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 
+import { CsrfProvider } from "@/components/brand/csrf-provider";
+
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-serif" });
 const caveat = Caveat({ subsets: ["latin"], variable: "--font-handwriting" });
@@ -21,9 +23,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable} ${caveat.variable}`}>
       <body className="gradient-surface min-h-screen font-sans antialiased">
-        {children}
-        <Toaster />
+        <CsrfProvider>
+          {children}
+          <Toaster />
+        </CsrfProvider>
       </body>
     </html>
   );
 }
+

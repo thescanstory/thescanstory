@@ -15,14 +15,15 @@ type LogContext = {
 class Logger {
   private isDev = process.env.NODE_ENV === "development";
 
-  private log(level: LogLevel, message: string, context?: LogContext, error?: Error) {
+  private log(level: LogLevel, message: string, context?: LogContext, error?: unknown) {
     const timestamp = new Date().toISOString();
+    const errObj = error instanceof Error ? error : error ? new Error(String(error)) : undefined;
     const logEntry = {
       timestamp,
       level,
       message,
       ...context,
-      ...(error && { error: { message: error.message, stack: error.stack } }),
+      ...(errObj && { error: { message: errObj.message, stack: errObj.stack } }),
     };
 
     // In production, you would send this to a logging service (Sentry, LogRocket, etc.)
@@ -55,7 +56,7 @@ class Logger {
     this.log("warn", message, context);
   }
 
-  error(message: string, error?: Error, context?: LogContext) {
+  error(message: string, error?: unknown, context?: LogContext) {
     this.log("error", message, context, error);
   }
 }

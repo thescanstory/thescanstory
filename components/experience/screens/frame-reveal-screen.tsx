@@ -48,7 +48,7 @@ export function FrameRevealScreen({
         transition={{ delay: 0.6, duration: 0.7 }}
         className="torn-edge w-full max-w-xs bg-white px-6 py-5 shadow-lg"
       >
-        <p className="text-center font-handwriting text-3xl text-primary sm:text-4xl">
+        <p className="text-center font-serif text-3xl font-bold tracking-tight text-primary sm:text-4xl">
           {heading}
         </p>
       </motion.div>

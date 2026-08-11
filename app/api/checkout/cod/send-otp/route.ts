@@ -8,7 +8,7 @@ export async function POST(request: Request) {
   try {
     // Rate limiting
     const identifier = getRateLimitIdentifier(request);
-    const rateLimit = otpRateLimiter.check(identifier);
+    const rateLimit = await otpRateLimiter.check(identifier);
 
     if (!rateLimit.allowed) {
       logger.warn("OTP rate limit exceeded", { identifier });

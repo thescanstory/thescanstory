@@ -1,58 +1,75 @@
-/**
- * Simple in-memory rate limiter for server-side use.
- * For production, consider Upstash Redis or Vercel Edge Middleware.
- */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { createAdminClient } from "@/lib/supabase/admin";
 
 type RateLimitConfig = {
   windowMs: number;
   maxRequests: number;
 };
 
-type RateLimitEntry = {
-  count: number;
-  resetAt: number;
-};
-
 class RateLimiter {
-  private store = new Map<string, RateLimitEntry>();
-  private cleanupInterval: NodeJS.Timeout;
+  constructor(private config: RateLimitConfig) {}
 
-  constructor(private config: RateLimitConfig) {
-    // Clean up expired entries every minute
-    this.cleanupInterval = setInterval(() => this.cleanup(), 60_000);
-  }
-
-  private cleanup() {
+  async check(identifier: string): Promise<{ allowed: boolean; remaining: number; resetAt: number }> {
     const now = Date.now();
-    for (const [key, entry] of this.store.entries()) {
-      if (now > entry.resetAt) {
-        this.store.delete(key);
+    const supabase = createAdminClient() as any;
+
+    try {
+      const { data, error } = await supabase
+        .from("rate_limits")
+        .select("count, reset_at")
+        .eq("key", identifier)
+        .maybeSingle();
+
+      if (error) {
+        console.error("[RATE LIMIT] Database query failed, falling back to allow:", error);
+        return { allowed: true, remaining: this.config.maxRequests - 1, resetAt: now + this.config.windowMs };
       }
+
+      if (!data || now > new Date(data.reset_at).getTime()) {
+        // Create or reset window
+        const resetAt = new Date(now + this.config.windowMs).toISOString();
+        const { error: upsertError } = await supabase
+          .from("rate_limits")
+          .upsert({
+            key: identifier,
+            count: 1,
+            reset_at: resetAt,
+          });
+
+        if (upsertError) {
+          console.error("[RATE LIMIT] Upsert failed:", upsertError);
+        }
+
+        return { allowed: true, remaining: this.config.maxRequests - 1, resetAt: new Date(resetAt).getTime() };
+      }
+
+      if (data.count >= this.config.maxRequests) {
+        return { allowed: false, remaining: 0, resetAt: new Date(data.reset_at).getTime() };
+      }
+
+      const newCount = data.count + 1;
+      const { error: updateError } = await supabase
+        .from("rate_limits")
+        .update({ count: newCount })
+        .eq("key", identifier);
+
+      if (updateError) {
+        console.error("[RATE LIMIT] Update failed:", updateError);
+      }
+
+      return {
+        allowed: true,
+        remaining: this.config.maxRequests - newCount,
+        resetAt: new Date(data.reset_at).getTime(),
+      };
+    } catch (err) {
+      console.error("[RATE LIMIT] Unexpected error:", err);
+      return { allowed: true, remaining: this.config.maxRequests - 1, resetAt: now + this.config.windowMs };
     }
-  }
-
-  check(identifier: string): { allowed: boolean; remaining: number; resetAt: number } {
-    const now = Date.now();
-    const entry = this.store.get(identifier);
-
-    if (!entry || now > entry.resetAt) {
-      // New window
-      const resetAt = now + this.config.windowMs;
-      this.store.set(identifier, { count: 1, resetAt });
-      return { allowed: true, remaining: this.config.maxRequests - 1, resetAt };
-    }
-
-    if (entry.count >= this.config.maxRequests) {
-      return { allowed: false, remaining: 0, resetAt: entry.resetAt };
-    }
-
-    entry.count++;
-    return { allowed: true, remaining: this.config.maxRequests - entry.count, resetAt };
   }
 
   destroy() {
-    clearInterval(this.cleanupInterval);
-    this.store.clear();
+    // No-op for DB rate limiter
   }
 }
 
@@ -69,3 +86,4 @@ export function getRateLimitIdentifier(request: Request): string {
   const ip = forwarded ? forwarded.split(",")[0]?.trim() : null;
   return ip || request.headers.get("x-real-ip") || "unknown";
 }
+

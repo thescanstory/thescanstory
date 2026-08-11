@@ -4,7 +4,7 @@ import { generateExperienceSlug } from "@/lib/utils/slug";
 import { isAdminAuthenticated } from "@/lib/auth/require-admin";
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   if (!(await isAdminAuthenticated(request))) {

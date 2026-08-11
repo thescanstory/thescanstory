@@ -39,11 +39,12 @@ export async function POST(request: Request) {
 
     if (!fileError && fileInfo && fileInfo[0]) {
       const maxSize = type === "video" ? 100 * 1024 * 1024 : 10 * 1024 * 1024; // 100MB for video, 10MB for photos
-      if (fileInfo[0].metadata.size > maxSize) {
+      const size = fileInfo[0].metadata?.size || 0;
+      if (size > maxSize) {
         logger.warn("File exceeds size limit", {
           storageBucket,
           storagePath,
-          size: fileInfo[0].metadata.size,
+          size,
           maxSize,
         });
         return NextResponse.json(

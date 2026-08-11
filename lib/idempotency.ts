@@ -1,50 +1,5 @@
-/**
- * Idempotency key utilities to prevent duplicate requests.
- * Stores processed keys in memory with TTL.
- */
-
-type IdempotencyEntry = {
-  response: unknown;
-  timestamp: number;
-};
-
-class IdempotencyStore {
-  private store = new Map<string, IdempotencyEntry>();
-  private cleanupInterval: NodeJS.Timeout;
-
-  constructor(private ttlMs: number = 24 * 60 * 60 * 1000) {
-    // 24 hour TTL by default
-    this.cleanupInterval = setInterval(() => this.cleanup(), 5 * 60 * 1000); // Clean up every 5 minutes
-  }
-
-  private cleanup() {
-    const now = Date.now();
-    for (const [key, entry] of this.store.entries()) {
-      if (now - entry.timestamp > this.ttlMs) {
-        this.store.delete(key);
-      }
-    }
-  }
-
-  get(key: string): IdempotencyEntry | undefined {
-    return this.store.get(key);
-  }
-
-  set(key: string, response: unknown): void {
-    this.store.set(key, {
-      response,
-      timestamp: Date.now(),
-    });
-  }
-
-  destroy() {
-    clearInterval(this.cleanupInterval);
-    this.store.clear();
-  }
-}
-
-// Global idempotency store
-export const idempotencyStore = new IdempotencyStore();
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * Extract idempotency key from request headers
@@ -54,7 +9,7 @@ export function getIdempotencyKey(request: Request): string | null {
 }
 
 /**
- * Middleware helper to handle idempotent requests
+ * Serverless-safe helper to handle idempotent requests using Supabase database.
  */
 export async function withIdempotency<T>(
   request: Request,
@@ -67,13 +22,41 @@ export async function withIdempotency<T>(
     return { response: await handler(), isDuplicate: false };
   }
 
-  const existing = idempotencyStore.get(key);
-  if (existing) {
-    return { response: existing.response as T, isDuplicate: true };
+  const supabase = createAdminClient() as any;
+
+  try {
+    const { data, error } = await supabase
+      .from("idempotency_keys")
+      .select("response")
+      .eq("key", key)
+      .maybeSingle();
+
+    if (error) {
+      console.error("[IDEMPOTENCY] Database query failed, proceeding without deduplication:", error);
+      return { response: await handler(), isDuplicate: false };
+    }
+
+    if (data) {
+      return { response: data.response as T, isDuplicate: true };
+    }
+
+    const response = await handler();
+
+    const { error: insertError } = await supabase
+      .from("idempotency_keys")
+      .insert({
+        key,
+        response: response as any,
+      });
+
+    if (insertError) {
+      console.error("[IDEMPOTENCY] Failed to save idempotency key:", insertError);
+    }
+
+    return { response, isDuplicate: false };
+  } catch (err) {
+    console.error("[IDEMPOTENCY] Unexpected error:", err);
+    return { response: await handler(), isDuplicate: false };
   }
-
-  const response = await handler();
-  idempotencyStore.set(key, response);
-
-  return { response, isDuplicate: false };
 }
+

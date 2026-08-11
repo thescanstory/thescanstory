@@ -13,47 +13,49 @@ export function LogoMark({ className }: { className?: string }) {
       className={cn("text-primary", className)}
       aria-hidden="true"
     >
-      {/* Ribbon bow */}
+      {/* Ribbon bow in primary (maroon) */}
       <path
-        d="M50 26 C50 26 44 10 32 12 C22 13.5 22 24 32 25.5 C40 26.5 50 26 50 26 Z"
-        className="fill-primary/70"
+        d="M50 26 C50 26 44 8 32 10 C22 11.5 22 22 32 23.5 C40 24.5 50 26 50 26 Z"
+        className="fill-primary"
       />
       <path
-        d="M50 26 C50 26 56 10 68 12 C78 13.5 78 24 68 25.5 C60 26.5 50 26 50 26 Z"
-        className="fill-primary/70"
+        d="M50 26 C50 26 56 8 68 10 C78 11.5 78 22 68 23.5 C60 24.5 50 26 50 26 Z"
+        className="fill-primary"
       />
       <circle cx="50" cy="26" r="4.5" className="fill-primary" />
 
-      {/* Outer frame (lighter tint) */}
+      {/* Outer frame in accent (pink) */}
       <rect
         x="14"
         y="30"
         width="72"
         height="96"
         rx="6"
-        className="stroke-primary/45"
+        className="stroke-accent"
         strokeWidth="6"
       />
 
-      {/* Inner frame, split top/bottom around the play button */}
+      {/* Inner frame in primary (maroon) */}
       <path
-        d="M28 44 H72 V70"
+        d="M26 46 H74 V72 M60 72 H46"
         className="stroke-primary"
         strokeWidth="5"
         strokeLinecap="round"
         fill="none"
       />
       <path
-        d="M28 44 V112 H72 V86"
+        d="M26 46 V110 H74 V84 M60 84 H46"
         className="stroke-primary"
         strokeWidth="5"
         strokeLinecap="round"
         fill="none"
       />
 
-      {/* Play button */}
-      <circle cx="66" cy="78" r="19" className="fill-accent" />
-      <path d="M60 69 L78 78 L60 87 Z" className="fill-white" />
+      {/* Play button in accent (pink) */}
+      <path
+        d="M48 68 C46 66.5 44 68 44 71.5 V84.5 C44 88 46 89.5 48 88 L58 81.5 C60 80 60 76 58 74.5 Z"
+        className="fill-accent"
+      />
     </svg>
   );
 }

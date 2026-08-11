@@ -2,6 +2,7 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getRateLimitIdentifier, otpRateLimiter, uploadRateLimiter, adminRateLimiter } from "@/lib/rate-limit";
 import { validateEnv } from "@/lib/env";
+import { requiresCsrfProtection, verifyCsrfToken } from "@/lib/csrf";
 
 // Validate environment on cold start (only in production)
 if (process.env.NODE_ENV === "production") {
@@ -17,6 +18,24 @@ if (process.env.NODE_ENV === "production") {
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request: { headers: request.headers } });
   const requestId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+  // CSRF Protection for mutative API calls
+  const isApiRoute = request.nextUrl.pathname.startsWith("/api");
+  const isMutative = ["POST", "PUT", "DELETE", "PATCH"].includes(request.method);
+
+  if (isApiRoute && isMutative && requiresCsrfProtection(request.nextUrl.pathname)) {
+    const isWebhook = request.nextUrl.pathname.startsWith("/api/webhooks");
+    const isInternal = request.nextUrl.pathname.startsWith("/api/internal");
+    const isCsrfInit = request.nextUrl.pathname === "/api/csrf";
+
+    if (!isWebhook && !isInternal && !isCsrfInit) {
+      const verified = await verifyCsrfToken(request);
+      if (!verified) {
+        console.warn(`[${requestId}] CSRF validation failed for path ${request.nextUrl.pathname}`);
+        return NextResponse.json({ error: "Invalid CSRF token" }, { status: 403 });
+      }
+    }
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -53,7 +72,7 @@ export async function middleware(request: NextRequest) {
   // Rate limiting for sensitive routes
   if (isAdminRoute) {
     const identifier = getRateLimitIdentifier(request);
-    const rateLimit = adminRateLimiter.check(identifier);
+    const rateLimit = await adminRateLimiter.check(identifier);
 
     if (!rateLimit.allowed) {
       console.warn(`[${requestId}] Rate limit exceeded for ${identifier} on ${request.nextUrl.pathname}`);
@@ -95,5 +114,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/api/:path*"],
 };
+

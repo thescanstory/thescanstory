@@ -7,7 +7,7 @@ import { isAdminAuthenticated } from "@/lib/auth/require-admin";
 // order status — for a bounced/lost email, a customer who never got the
 // link, or testing the notification pipeline against a real order.
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   if (!(await isAdminAuthenticated(request))) {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSmsConfigured, sendOtpSms } from "@/lib/sms/sms";
 import { logger } from "@/lib/logger";
@@ -53,34 +54,65 @@ export async function verifyOtp(params: {
   try {
     const supabase = createAdminClient();
 
-    const { data, error } = await supabase
+    // 1. Get the most recent active (unverified and unexpired) OTP code
+    const { data: activeOtp, error: selectError } = await supabase
       .from("otp_codes")
       .select("*")
       .eq("session_id", params.sessionId)
       .eq("phone", params.phone)
-      .eq("code", params.code)
       .eq("verified", false)
       .gte("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
-    if (error) {
-      logger.error("Error verifying OTP", error, { sessionId: params.sessionId, phone: params.phone });
-      throw error;
+    if (selectError) {
+      logger.error("Error retrieving OTP for verification", selectError, { sessionId: params.sessionId, phone: params.phone });
+      throw selectError;
     }
-    if (!data) {
-      logger.warn("Invalid or expired OTP", { phone: params.phone, sessionId: params.sessionId });
+
+    if (!activeOtp) {
+      logger.warn("No active OTP found for verification", { phone: params.phone, sessionId: params.sessionId });
       return false;
     }
 
-    const { error: updateError } = await supabase
+    // 2. Increment attempts count
+    const newAttempts = ((activeOtp as any).attempts || 0) + 1;
+    const shouldInvalidate = newAttempts >= 3;
+
+    // Update attempts (and invalidate if limit reached)
+    const { error: updateAttemptsError } = await supabase
+      .from("otp_codes")
+      .update({
+        attempts: newAttempts,
+        ...(shouldInvalidate ? { expires_at: new Date(0).toISOString() } : {}),
+      } as any)
+      .eq("id", activeOtp.id);
+
+    if (updateAttemptsError) {
+      logger.error("Failed to update OTP attempts count", updateAttemptsError, { otpId: activeOtp.id });
+      throw updateAttemptsError;
+    }
+
+    // 3. Verify code
+    if (activeOtp.code !== params.code) {
+      logger.warn("Incorrect OTP code entered", {
+        phone: params.phone,
+        sessionId: params.sessionId,
+        attempts: newAttempts,
+      });
+      return false;
+    }
+
+    // 4. Mark as verified
+    const { error: verifyError } = await supabase
       .from("otp_codes")
       .update({ verified: true })
-      .eq("id", data.id);
-    if (updateError) {
-      logger.error("Failed to mark OTP as verified", updateError, { otpId: data.id });
-      throw updateError;
+      .eq("id", activeOtp.id);
+
+    if (verifyError) {
+      logger.error("Failed to mark OTP as verified", verifyError, { otpId: activeOtp.id });
+      throw verifyError;
     }
 
     logger.info("OTP verified successfully", { phone: params.phone, sessionId: params.sessionId });
@@ -90,3 +122,4 @@ export async function verifyOtp(params: {
     return false;
   }
 }
+
