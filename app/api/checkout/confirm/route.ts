@@ -11,6 +11,7 @@ import { shippingSchema } from "@/lib/validation/schemas";
 import { isPaymentsConfigured, verifyRazorpaySignature } from "@/lib/payments/razorpay";
 import { withIdempotency } from "@/lib/idempotency";
 import { logger } from "@/lib/logger";
+import { sendOrderPlacedNotification } from "@/lib/notify/notify";
 import type { PaymentMethod, PaymentStatus } from "@/types/database.types";
 
 const COD_HANDLING_FEE_PAISE = Number(process.env.COD_HANDLING_FEE_PAISE ?? 4900);
@@ -119,6 +120,21 @@ export async function POST(request: Request) {
       await moveOrderMediaToActiveBucket(order.id);
 
       logger.info("Order created", { orderId: order.id, productId, paymentMethod, paymentStatus });
+
+      // Dispatch order confirmed notification
+      // Note: For real online payments that drop before this route is hit,
+      // the Razorpay webhook acts as the fallback to dispatch this notification.
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://thescanstory.com";
+      const trackUrl = `${appUrl}/order-confirmation/${order.id}`;
+      
+      // Fire-and-forget so we don't block the checkout redirect
+      void sendOrderPlacedNotification({
+        email: order.email,
+        phone: order.phone,
+        orderId: order.id,
+        trackUrl,
+        customerName: name,
+      });
 
       return NextResponse.json({
         orderId: order.id,

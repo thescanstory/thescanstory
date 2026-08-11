@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getOrderByRazorpayOrderId, markOrderPaid } from "@/lib/db/orders";
 import { isWebhookConfigured, verifyRazorpayWebhookSignature } from "@/lib/payments/razorpay";
+import { sendOrderPlacedNotification } from "@/lib/notify/notify";
 
 // Reconciles payments that the client never got to confirm (tab closed,
 // network drop between Razorpay's redirect and our /checkout/confirm call).
@@ -47,6 +48,19 @@ export async function POST(request: Request) {
 
   if (order.payment_status !== "paid") {
     await markOrderPaid({ orderId: order.id, razorpayPaymentId: payment.id });
+    
+    // Dispatch order confirmed notification
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://thescanstory.com";
+    const trackUrl = `${appUrl}/order-confirmation/${order.id}`;
+    const address = (order.shipping_address ?? {}) as { name?: string };
+    
+    await sendOrderPlacedNotification({
+      email: order.email,
+      phone: order.phone,
+      orderId: order.id,
+      trackUrl,
+      customerName: address.name,
+    });
   }
 
   return NextResponse.json({ received: true });

@@ -31,6 +31,32 @@ function renderShippedEmail(params: { customerName?: string; experienceUrl: stri
   };
 }
 
+function renderOrderPlacedEmail(params: { customerName?: string; orderId: string; trackUrl: string }) {
+  const greeting = params.customerName ? `Hi ${params.customerName},` : "Hi,";
+  return {
+    subject: `Your Scan Story order ${params.orderId.slice(0, 8)} is confirmed!`,
+    html: `
+      <p>${greeting}</p>
+      <p>We've received your order and are preparing your magical AR experience. You can track your order status here:</p>
+      <p><a href="${params.trackUrl}">${params.trackUrl}</a></p>
+      <p>— The Scan Story</p>
+    `,
+  };
+}
+
+function renderReminderEmail(params: { customerName?: string; experienceUrl: string }) {
+  const greeting = params.customerName ? `Hi ${params.customerName},` : "Hi,";
+  return {
+    subject: "Haven't opened your AR experience yet?",
+    html: `
+      <p>${greeting}</p>
+      <p>Your Scan Story experience is waiting for you! Click the link below to dive in:</p>
+      <p><a href="${params.experienceUrl}">${params.experienceUrl}</a></p>
+      <p>— The Scan Story</p>
+    `,
+  };
+}
+
 async function sendSms(params: { phone: string; experienceUrl: string }) {
   if (!isSmsConfigured()) {
     console.log(`[SMS STUB] Would send experience link to ${params.phone}: ${params.experienceUrl}`);
@@ -79,5 +105,66 @@ export async function sendShippedNotification(params: {
     }
   } catch (error) {
     logger.error("Error sending email notification", error, { email: params.email });
+  }
+}
+
+export async function sendOrderPlacedNotification(params: {
+  email: string;
+  phone: string;
+  orderId: string;
+  trackUrl: string;
+  customerName?: string;
+}) {
+  const { sendOrderConfirmedSms } = await import("@/lib/sms/sms");
+  if (!isSmsConfigured()) {
+    logger.info("SMS notification (stub mode)", { phone: params.phone, trackUrl: params.trackUrl });
+  } else {
+    try {
+      await sendOrderConfirmedSms(params.phone, params.orderId, params.trackUrl);
+    } catch {
+      // Ignored
+    }
+  }
+
+  if (!isEmailConfigured()) {
+    logger.info("Email notification (stub mode)", { email: params.email, trackUrl: params.trackUrl });
+    return;
+  }
+  try {
+    const { subject, html } = renderOrderPlacedEmail(params);
+    const client = getClient();
+    await client.emails.send({ from: FROM_ADDRESS, to: params.email, subject, html });
+  } catch {
+    // Ignored
+  }
+}
+
+export async function sendReminderNotification(params: {
+  email: string;
+  phone: string;
+  experienceUrl: string;
+  customerName?: string;
+}) {
+  const { sendReminderSms } = await import("@/lib/sms/sms");
+  if (!isSmsConfigured()) {
+    logger.info("SMS notification (stub mode)", { phone: params.phone, experienceUrl: params.experienceUrl });
+  } else {
+    try {
+      await sendReminderSms(params.phone, params.experienceUrl);
+    } catch {
+      // Ignored
+    }
+  }
+
+  if (!isEmailConfigured()) {
+    logger.info("Email notification (stub mode)", { email: params.email, experienceUrl: params.experienceUrl });
+    return;
+  }
+  try {
+    const { subject, html } = renderReminderEmail(params);
+    const client = getClient();
+    await client.emails.send({ from: FROM_ADDRESS, to: params.email, subject, html });
+  } catch {
+    // Ignored
   }
 }

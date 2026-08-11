@@ -225,3 +225,32 @@ export async function markOrderPaid(params: {
   if (error) throw error;
   return data;
 }
+
+export async function findOrdersNeedingReminder() {
+  const supabase = createAdminClient();
+  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  
+  const { data, error } = await supabase
+    .from("orders")
+    .select("*, media_assets!inner(cached_confirmed)")
+    .eq("status", "shipped")
+    .lte("updated_at", twentyFourHoursAgo);
+
+  if (error) throw error;
+
+  return data.filter(order => order.media_assets.some(m => !m.cached_confirmed));
+}
+
+export async function findUnprintableOrders() {
+  const supabase = createAdminClient();
+  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  
+  const { data, error } = await supabase
+    .from("orders")
+    .select("*, customers(name)")
+    .lte("created_at", twentyFourHoursAgo)
+    .in("status", ["pending"]); // Unpaid online orders or unverified CODs
+
+  if (error) throw error;
+  return data;
+}

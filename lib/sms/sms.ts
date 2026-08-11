@@ -61,3 +61,19 @@ export async function sendShippedSms(phone: string, experienceUrl: string) {
     variables: { LINK: experienceUrl },
   });
 }
+
+export async function sendOrderConfirmedSms(phone: string, orderId: string, trackUrl: string) {
+  await sendTemplateSms({
+    phone,
+    templateId: process.env.MSG91_CONFIRMED_TEMPLATE_ID ?? process.env.MSG91_SHIPPED_TEMPLATE_ID!,
+    variables: { ID: orderId, LINK: trackUrl },
+  });
+}
+
+export async function sendReminderSms(phone: string, experienceUrl: string) {
+  await sendTemplateSms({
+    phone,
+    templateId: process.env.MSG91_REMINDER_TEMPLATE_ID ?? process.env.MSG91_SHIPPED_TEMPLATE_ID!,
+    variables: { LINK: experienceUrl },
+  });
+}

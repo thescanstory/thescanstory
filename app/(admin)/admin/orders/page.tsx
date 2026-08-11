@@ -5,7 +5,7 @@ import { OrdersTable } from "@/components/admin/orders-table";
 import { Button } from "@/components/ui/button";
 import { formatPaise } from "@/lib/utils/format";
 import type { OrderStatus, PaymentMethod } from "@/types/database.types";
-import { Package, TrendingUp, Clock } from "lucide-react";
+import { Package, TrendingUp, Clock, Download } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +30,14 @@ export default async function AdminOrdersPage({
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="gradient-text font-serif text-2xl font-semibold">Orders</h1>
-        <p className="text-sm text-muted-foreground">{total} total</p>
+        <div className="flex items-center gap-4">
+          <p className="text-sm text-muted-foreground">{total} total</p>
+          <Button variant="outline" size="sm" asChild>
+            <a href="/api/admin/orders/export-report" download>
+              <Download className="mr-2 h-4 w-4" /> Download Report
+            </a>
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-8">
