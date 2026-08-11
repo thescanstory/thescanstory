@@ -3,10 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Copy, Download, FileArchive, Printer, Truck } from "lucide-react";
+import { Copy, Download, FileArchive, Printer, Truck, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { PhotoCarousel } from "@/components/admin/photo-carousel";
 import {
   Table,
   TableBody,
@@ -50,6 +51,7 @@ function downloadBlob(blob: Blob, fileName: string) {
 export function OrdersTable({ orders }: { orders: OrderRow[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pending, setPending] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const allSelected = orders.length > 0 && selected.size === orders.length;
 
@@ -137,6 +139,10 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
             <FileArchive className="mr-1.5 h-3.5 w-3.5" />
             Download Photos (ZIP)
           </Button>
+          <Button size="sm" variant="outline" disabled={pending} onClick={() => setPreviewOpen(true)}>
+            <Eye className="mr-1.5 h-3.5 w-3.5" />
+            Preview Photos
+          </Button>
           <Button size="sm" variant="outline" disabled={pending} onClick={handlePrintLabels}>
             <Printer className="mr-1.5 h-3.5 w-3.5" />
             Print Labels
@@ -215,6 +221,12 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
         </TableBody>
       </Table>
       </div>
+
+      <PhotoCarousel
+        ids={[...selected]}
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+      />
     </div>
   );
 }

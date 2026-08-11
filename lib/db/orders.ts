@@ -141,6 +141,44 @@ export async function listOrders(params: {
   };
 }
 
+export async function getDashboardMetrics() {
+  const supabase = createAdminClient();
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const { data: todayOrders } = await supabase
+    .from("orders")
+    .select("products(price_paise), cod_handling_fee_paise")
+    .gte("created_at", startOfDay.toISOString());
+
+  let totalOrdersToday = 0;
+  let revenueTodayPaise = 0;
+  
+  if (todayOrders) {
+    totalOrdersToday = todayOrders.length;
+    revenueTodayPaise = todayOrders.reduce((sum, order) => {
+      // Supabase relation might return an array or single object
+      // depending on the exact typing, but standard one-to-one or
+      // many-to-one returns a single object. We handle both just in case.
+      const p = Array.isArray(order.products) ? order.products[0] : order.products;
+      // Note: Only sum revenue for orders that are actually paid or COD? 
+      // The prompt says "revenue today", let's sum up everything placed today
+      return sum + (p?.price_paise ?? 0) + (order.cod_handling_fee_paise ?? 0);
+    }, 0);
+  }
+
+  const { count: pendingCount } = await supabase
+    .from("orders")
+    .select("*", { count: "exact", head: true })
+    .in("status", ["paid", "cod_pending"]);
+
+  return {
+    totalOrdersToday,
+    revenueTodayPaise,
+    pendingFulfillmentCount: pendingCount ?? 0,
+  };
+}
+
 export async function updateOrderStatus(id: string, status: OrderStatus) {
   const supabase = createAdminClient();
   const { data, error } = await supabase
