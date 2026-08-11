@@ -1,130 +1,83 @@
-"use client";
-
-import { useCallback, useRef, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { getProducts } from "@/lib/db/products";
+import { formatPaise } from "@/lib/utils/format";
+import type { Database } from "@/types/database.types";
 import { Button } from "@/components/ui/button";
 
-type Status = "idle" | "starting" | "running" | "permission-denied" | "error";
+export const dynamic = "force-dynamic";
 
-export default function HomePage() {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [status, setStatus] = useState<Status>("idle");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+const TYPE_LABELS: Record<
+  Database["public"]["Tables"]["products"]["Row"]["type"],
+  string
+> = {
+  frame: "Photo Frame",
+  wallet_card: "Wallet Card",
+  tshirt: "T-Shirt",
+};
 
-  const start = useCallback(async () => {
-    setStatus("starting");
-    setErrorMessage(null);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-        audio: false,
-      });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-      setStatus("running");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
-      if (/permission|NotAllowedError/i.test(message)) {
-        setStatus("permission-denied");
-      } else {
-        setStatus("error");
-        setErrorMessage(message);
-      }
-    }
-  }, []);
+export default async function StorefrontHomePage() {
+  const products = await getProducts();
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-black">
-      {/* Live camera feed */}
-      <video
-        ref={videoRef}
-        className="absolute inset-0 h-full w-full object-cover"
-        playsInline
-        muted
-        autoPlay
-      />
+    <div className="mx-auto max-w-5xl px-6 py-12 sm:py-24">
+      <div className="text-center mb-16">
+        <h1 className="font-serif text-4xl sm:text-5xl font-bold tracking-tight text-primary">
+          Turn your memories into <br className="hidden sm:block" />
+          interactive experiences.
+        </h1>
+        <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
+          Choose a product, upload your favorite photo and a hidden video message. 
+          When someone scans the physical print with our app, your memory comes to life.
+        </p>
+      </div>
 
-      {/* Scanning overlay — always visible on top of the feed */}
-      {status === "running" && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <div className="relative h-64 w-64">
-            <span className="absolute left-0 top-0 h-10 w-10 border-l-4 border-t-4 border-white rounded-tl-sm" />
-            <span className="absolute right-0 top-0 h-10 w-10 border-r-4 border-t-4 border-white rounded-tr-sm" />
-            <span className="absolute bottom-0 left-0 h-10 w-10 border-b-4 border-l-4 border-white rounded-bl-sm" />
-            <span className="absolute bottom-0 right-0 h-10 w-10 border-b-4 border-r-4 border-white rounded-br-sm" />
-            {/* Animated scan line */}
-            <div className="absolute inset-x-0 top-0 h-0.5 bg-white/80 animate-scan" />
-          </div>
-          <p className="mt-6 text-sm font-medium uppercase tracking-widest text-white/70">
-            Point at your frame
-          </p>
-        </div>
-      )}
-
-      {/* Pre-camera overlay */}
-      {status !== "running" && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-black px-6 text-center text-white">
-          {(status === "idle" || status === "starting") && (
-            <>
-              <div className="relative flex h-56 w-56 items-center justify-center">
-                <span className="absolute left-0 top-0 h-10 w-10 border-l-4 border-t-4 border-white/60 rounded-tl-sm" />
-                <span className="absolute right-0 top-0 h-10 w-10 border-r-4 border-t-4 border-white/60 rounded-tr-sm" />
-                <span className="absolute bottom-0 left-0 h-10 w-10 border-b-4 border-l-4 border-white/60 rounded-bl-sm" />
-                <span className="absolute bottom-0 right-0 h-10 w-10 border-b-4 border-r-4 border-white/60 rounded-br-sm" />
-                <p className="text-xs font-medium uppercase tracking-widest text-white/40">
-                  {status === "starting" ? "Opening…" : "Aim at your frame"}
-                </p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-lg font-semibold">Scan your printed frame</p>
-                <p className="max-w-xs text-sm text-white/60">
-                  Point your camera at the photo frame — your video will play right over it.
-                </p>
-              </div>
-              {status === "idle" && (
-                <Button
-                  size="lg"
-                  className="rounded-full bg-white px-10 text-black font-semibold hover:bg-white/90"
-                  onClick={start}
-                >
-                  Open Camera
-                </Button>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {products.map((product) => (
+          <Link
+            key={product.id}
+            href={`/product/${product.id}`}
+            className="group flex flex-col overflow-hidden rounded-2xl bg-white border border-secondary shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300"
+          >
+            <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
+              {product.image_url ? (
+                <Image
+                  src={product.image_url}
+                  alt={product.name}
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/40 bg-secondary/30">
+                  <span className="font-medium">No Image Available</span>
+                </div>
               )}
-            </>
-          )}
-
-          {status === "permission-denied" && (
-            <>
-              <p className="max-w-xs text-sm text-white/70">
-                Camera access was denied. Please allow camera access in your browser settings, then try again.
-              </p>
-              <Button
-                size="lg"
-                className="rounded-full bg-white px-10 text-black font-semibold hover:bg-white/90"
-                onClick={start}
-              >
-                Try again
-              </Button>
-            </>
-          )}
-
-          {status === "error" && (
-            <>
-              <p className="max-w-xs text-sm text-white/70">
-                Something went wrong{errorMessage ? `: ${errorMessage}` : ""}.
-              </p>
-              <Button
-                size="lg"
-                className="rounded-full bg-white px-10 text-black font-semibold hover:bg-white/90"
-                onClick={start}
-              >
-                Try again
-              </Button>
-            </>
-          )}
-        </div>
-      )}
+              <div className="absolute top-4 left-4 rounded-full bg-white/90 backdrop-blur px-3 py-1 text-xs font-semibold text-primary shadow-sm">
+                {TYPE_LABELS[product.type]}
+              </div>
+            </div>
+            
+            <div className="flex flex-1 flex-col justify-between p-6">
+              <div>
+                <h3 className="font-serif text-xl font-semibold text-primary">
+                  {product.name}
+                </h3>
+                <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
+                  {product.description}
+                </p>
+              </div>
+              <div className="mt-6 flex items-center justify-between">
+                <p className="text-lg font-bold gradient-text">
+                  {formatPaise(product.price_paise)}
+                </p>
+                <Button variant="ghost" className="rounded-full px-4 text-primary font-semibold group-hover:bg-accent group-hover:text-white transition-colors">
+                  Personalize
+                </Button>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

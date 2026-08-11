@@ -180,6 +180,29 @@ export function CustomizeForm({ productId }: { productId: string }) {
     };
   }, [message, sessionId]);
 
+  useEffect(() => {
+    if (!sessionId) return;
+    let cancelled = false;
+
+    fetch(`/api/session/${sessionId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        if (data.photo) setPhoto({ status: "done", fileName: data.photo.fileName });
+        if (data.video) setVideo({ status: "done", fileName: data.video.fileName });
+        if (data.message && !message) {
+          setMessage(data.message);
+          setMessageSaved(true);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
+
   const canContinue =
     photo.status === "done" && video.status === "done" && message.trim().length > 0;
   const canSkip =
