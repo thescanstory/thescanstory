@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ScanLine, Volume2 } from "lucide-react";
+import { ArrowLeft, ScanLine, Volume2, Share2, Sun, Contrast, Play, Settings2 } from "lucide-react";
 import * as THREE from "three";
 import { Button } from "@/components/ui/button";
 import { getCachedMedia } from "@/lib/cache/media-cache";
@@ -94,6 +94,14 @@ export function ARScene({
   const [status, setStatus] = useState<Status>("welcome");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const [brightness, setBrightness] = useState(100);
+  const [contrast, setContrast] = useState(100);
+  const [showControls, setShowControls] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
+
+  const anchorGroupRef = useRef<THREE.Group | null>(null);
+  const pinchRef = useRef<{ initialDist: number; initialScale: number } | null>(null);
+
   // ── launch MindAR (called from the "Start AR" button) ─────────────────
   const startAR = useCallback(async () => {
     if (!containerRef.current) return;
@@ -149,6 +157,7 @@ export function ARScene({
       frameMatte.visible = false;
 
       const anchor = mindarThree.addAnchor(0);
+      anchorGroupRef.current = anchor.group;
       anchor.group.add(frameMatte);
       anchor.group.add(plane);
 
@@ -158,10 +167,12 @@ export function ARScene({
         if (plane) plane.visible = true;
         if (frameMatte) frameMatte.visible = true;
         video.play().catch(() => {});
+        setIsPlaying(true);
         setStatus("playing");
       };
       anchor.onTargetLost = () => {
         video.pause();
+        setIsPlaying(false);
         if (plane) plane.visible = false;
         if (frameMatte) frameMatte.visible = false;
         setStatus("scanning");
@@ -187,6 +198,105 @@ export function ARScene({
     if (!v) return;
     v.muted = false;
     void v.play();
+    setIsPlaying(true);
+  }, []);
+
+  // ── Interactivity (Tap, Pinch, Share) ──────────────────────────────────
+  const handleTap = useCallback(() => {
+    if (status !== "playing" && status !== "target-found") return;
+    const v = videoElRef.current;
+    if (!v) return;
+    if (v.paused) {
+      v.play().catch(() => {});
+      setIsPlaying(true);
+    } else {
+      v.pause();
+      setIsPlaying(false);
+    }
+  }, [status]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2 && anchorGroupRef.current) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      pinchRef.current = { initialDist: dist, initialScale: anchorGroupRef.current.scale.x };
+    }
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2 && pinchRef.current && anchorGroupRef.current) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const scale = pinchRef.current.initialScale * (dist / pinchRef.current.initialDist);
+      const clampedScale = Math.max(0.5, Math.min(3, scale));
+      anchorGroupRef.current.scale.set(clampedScale, clampedScale, clampedScale);
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length < 2) {
+      pinchRef.current = null;
+    }
+  }, []);
+
+  const handleShare = useCallback(async () => {
+    if (!containerRef.current || !mindarRef.current) return;
+    try {
+      const video = containerRef.current.querySelector("video");
+      const canvas = containerRef.current.querySelector("canvas");
+      if (!video || !canvas) return;
+
+      const { renderer, scene, camera } = mindarRef.current;
+      renderer.render(scene, camera);
+
+      const rect = containerRef.current.getBoundingClientRect();
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = rect.width;
+      tempCanvas.height = rect.height;
+      const ctx = tempCanvas.getContext("2d");
+      if (!ctx) return;
+
+      const videoRatio = video.videoWidth / video.videoHeight;
+      const screenRatio = rect.width / rect.height;
+      let sWidth = video.videoWidth;
+      let sHeight = video.videoHeight;
+      let sx = 0, sy = 0;
+      
+      if (screenRatio > videoRatio) {
+        sHeight = sWidth / screenRatio;
+        sy = (video.videoHeight - sHeight) / 2;
+      } else {
+        sWidth = sHeight * screenRatio;
+        sx = (video.videoWidth - sWidth) / 2;
+      }
+      ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, rect.width, rect.height);
+      ctx.drawImage(canvas, 0, 0, rect.width, rect.height);
+
+      const blob = await new Promise<Blob | null>((res) => tempCanvas.toBlob(res, "image/jpeg", 0.9));
+      if (!blob) throw new Error("Failed to create blob");
+
+      const file = new File([blob], "scan-story-moment.jpg", { type: "image/jpeg" });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: "Our Scan Story Moment",
+          text: "Check out this magical AR memory!",
+          files: [file],
+        });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "scan-story-moment.jpg";
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      console.error("Screenshot failed:", err);
+    }
   }, []);
 
   // ── helpers ───────────────────────────────────────────────────────────
@@ -194,18 +304,48 @@ export function ARScene({
     status !== "scanning" && status !== "playing" && status !== "target-found";
 
   return (
-    <div className="relative h-screen w-screen bg-black overflow-hidden">
+    <div className="relative h-screen w-screen bg-black overflow-hidden select-none">
       {/* MindAR renders into this container once the camera starts */}
-      <div ref={containerRef} className="absolute inset-0" />
+      <div 
+        ref={containerRef} 
+        className="absolute inset-0"
+        style={{ filter: `brightness(${brightness}%) contrast(${contrast}%)` }}
+      />
+      
+      {/* Invisible gesture layer for tap/pinch */}
+      <div 
+        className="absolute inset-0 z-10"
+        onClick={handleTap}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
+      />
 
-      {/* ── Back button — shown once the camera is live ─────────────── */}
+      {/* ── Top Bar — shown once the camera is live ─────────────── */}
       {(status === "scanning" || status === "target-found" || status === "playing") && (
-        <Link
-          href={`/experience/${slug}/story`}
-          className="absolute left-4 top-4 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Link>
+        <div className="absolute top-4 left-4 right-4 z-20 flex justify-between items-center pointer-events-none">
+          <Link
+            href={`/experience/${slug}/story`}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur pointer-events-auto"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+          <div className="flex gap-3 pointer-events-auto">
+            <button
+              onClick={handleShare}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur active:scale-95"
+            >
+              <Share2 className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setShowControls(!showControls)}
+              className={`flex h-10 w-10 items-center justify-center rounded-full backdrop-blur active:scale-95 ${showControls ? "bg-accent text-white" : "bg-black/50 text-white"}`}
+            >
+              <Settings2 className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
       )}
 
       {/* ── "Scanning…" hint shown while camera is live but no target ── */}
@@ -225,15 +365,51 @@ export function ARScene({
         </div>
       )}
 
-            {/* ── Unmute hint — shown once the target locks and video auto-plays ─ */}
-      {status === "playing" && (
-        <div className="absolute bottom-6 left-0 right-0 z-20 flex justify-center">
+            {/* Play/Pause state icon briefly visible or persistent? We can just show the unmute button */}
+      {status === "playing" && !showControls && (
+        <div className="absolute bottom-6 left-0 right-0 z-20 flex justify-center gap-4 pointer-events-none">
           <button
-            onClick={unmute}
-            className="flex items-center gap-2 rounded-full bg-black/60 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur active:scale-95"
+            onClick={(e) => { e.stopPropagation(); unmute(); }}
+            className="flex items-center gap-2 rounded-full bg-black/60 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur active:scale-95 pointer-events-auto"
           >
             <Volume2 className="h-4 w-4" /> Sound
           </button>
+          {!isPlaying && (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleTap(); }}
+              className="flex items-center gap-2 rounded-full bg-black/60 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur active:scale-95 pointer-events-auto"
+            >
+              <Play className="h-4 w-4 fill-white" /> Resume
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Adjustments Panel */}
+      {showControls && (status === "scanning" || status === "target-found" || status === "playing") && (
+        <div className="absolute bottom-6 left-6 right-6 z-20 rounded-2xl bg-black/70 p-4 backdrop-blur pointer-events-auto space-y-4">
+          <div className="flex items-center gap-4">
+            <Sun className="h-4 w-4 text-white/70" />
+            <input
+              type="range"
+              min="50"
+              max="150"
+              value={brightness}
+              onChange={(e) => setBrightness(Number(e.target.value))}
+              className="w-full accent-accent"
+            />
+          </div>
+          <div className="flex items-center gap-4">
+            <Contrast className="h-4 w-4 text-white/70" />
+            <input
+              type="range"
+              min="50"
+              max="150"
+              value={contrast}
+              onChange={(e) => setContrast(Number(e.target.value))}
+              className="w-full accent-accent"
+            />
+          </div>
         </div>
       )}
 
