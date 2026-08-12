@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { ScanLine, Grid3X3, ArrowRight, ShoppingBag } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
+import Image from "next/image";
 
 function MenuButton({
   icon: Icon,
@@ -26,7 +27,7 @@ function MenuButton({
       </div>
       <div className="flex-1">
         <h3 className="font-semibold tracking-tight text-primary">{title}</h3>
-        {subtitle && <p className="mt-0.5 text-xs text-primary/60">{subtitle}</p>}
+        {subtitle && <p className="mt-0.5 text-xs text-primary/80">{subtitle}</p>}
       </div>
       <ArrowRight className="h-5 w-5 text-primary/20 transition-transform group-hover:translate-x-1" />
     </button>
@@ -86,8 +87,7 @@ export function SinglePageStory({
           <div className="gold-frame-mat h-full w-full relative">
             <div className="relative h-full w-full overflow-hidden bg-muted">
               {photoUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={photoUrl} alt="Your photo" className="h-full w-full object-cover" />
+                <Image src={photoUrl} alt="Your photo" fill priority className="object-cover" sizes="(max-width: 768px) 100vw, 320px" />
               )}
               {/* Torn paper overlay at the bottom with heading */}
               <div className="torn-edge absolute bottom-0 left-0 right-0 bg-background pt-8 pb-6 px-4 flex flex-col justify-end items-center min-h-[100px]">
