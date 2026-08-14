@@ -4,11 +4,6 @@ const nextConfig = {
   async redirects() {
     return [
       {
-        source: "/experience/:slug/ar",
-        destination: "/experience/:slug",
-        permanent: true,
-      },
-      {
         source: "/:path*",
         has: [
           {

@@ -3,15 +3,14 @@ import { getOrderBySlug } from "@/lib/db/orders";
 import { getMediaAssetsByOrder } from "@/lib/db/media-assets";
 import { getMessageByOrder } from "@/lib/db/messages";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { splitMessage } from "@/lib/experience/split-message";
-import { ARScene } from "@/components/experience/ar-scene";
+import { GreetingScreen } from "@/components/experience/greeting-screen";
 import { PreparingScreen } from "@/components/experience/preparing-screen";
 
 export const dynamic = "force-dynamic";
 
 const SIGNED_URL_TTL_SECONDS = 60 * 60;
 
-export default async function ExperiencePage({
+export default async function ExperienceStoryPage({
   params,
 }: {
   params: { slug: string };
@@ -27,10 +26,11 @@ export default async function ExperiencePage({
   const photo = assets.find((a) => a.type === "target_photo");
   const video = assets.find((a) => a.type === "video");
 
-  // Media not attached yet — show a "come back soon" screen
   if (!photo || !video) {
     return <PreparingScreen />;
   }
+
+  const cachedConfirmed = !!(photo.cached_confirmed && video.cached_confirmed);
 
   const supabase = createAdminClient();
   const [photoSigned, videoSigned, mindSigned] = await Promise.all([
@@ -47,17 +47,12 @@ export default async function ExperiencePage({
       : Promise.resolve({ data: null }),
   ]);
 
-  // Extract the heading from the message to use as a personal welcome line
-  const { heading } = splitMessage(messageRow?.text_content ?? "");
-  const welcomeMessage = heading
-    ? `${heading} ✨`
-    : "Your AR experience is ready ✨";
-
   return (
-    <ARScene
-      orderId={order.id}
+    <GreetingScreen
       slug={params.slug}
-      welcomeMessage={welcomeMessage}
+      orderId={order.id}
+      message={messageRow?.text_content ?? ""}
+      cachedConfirmed={cachedConfirmed}
       signedUrls={{
         photo: photoSigned.data?.signedUrl ?? "",
         video: videoSigned.data?.signedUrl ?? "",

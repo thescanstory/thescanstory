@@ -1,6 +1,6 @@
 import { AdminHeader } from "@/components/admin/admin-header";
 
-export default function OrdersLayout({ children }: { children: React.ReactNode }) {
+export default function ProductsLayout({ children }: { children: React.ReactNode }) {
   return (
     <div>
       <AdminHeader />

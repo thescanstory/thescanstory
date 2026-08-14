@@ -40,3 +40,12 @@ export type OtpVerifyInput = z.infer<typeof otpVerifySchema>;
 export const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
 export const MAX_VIDEO_DURATION_SECONDS = 60;
 export const MIN_TARGET_PHOTO_DIMENSION = 1000; // px, both width and height
+
+export const productSchema = z.object({
+  name: z.string().trim().min(2, "Name is required").max(100),
+  description: z.string().trim().max(500).optional().nullable(),
+  price_paise: z.number().int().min(0, "Price must be positive"),
+  image_url: z.string().trim().url().optional().nullable().or(z.literal("")),
+  type: z.enum(["frame", "wallet_card", "tshirt"]),
+});
+export type ProductInput = z.infer<typeof productSchema>;

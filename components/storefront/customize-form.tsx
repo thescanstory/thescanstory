@@ -203,9 +203,9 @@ export function CustomizeForm({ productId }: { productId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
-  const canContinue =
+  const canPreviewAR =
     photo.status === "done" && video.status === "done" && message.trim().length > 0;
-  const canSkip =
+  const canCheckout =
     !!sessionId &&
     photo.status !== "compiling" &&
     photo.status !== "uploading" &&
@@ -260,7 +260,10 @@ export function CustomizeForm({ productId }: { productId: string }) {
   return (
     <div className="space-y-10">
       <section>
-        <Label className="text-base">1. Upload the photo to print</Label>
+        <div className="mb-1 flex items-center justify-between">
+          <Label className="text-base">1. Upload the photo to print</Label>
+          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Optional</span>
+        </div>
         <p className="mb-3 mt-1 text-sm text-muted-foreground">
           Upload <strong className="font-medium text-foreground">only the photo itself</strong> — no frame border, no mat, no shadow.
           Crop it tight to the edges of the image. This is what the camera will
@@ -278,7 +281,10 @@ export function CustomizeForm({ productId }: { productId: string }) {
       </section>
 
       <section>
-        <Label className="text-base">2. Upload your video message</Label>
+        <div className="mb-1 flex items-center justify-between">
+          <Label className="text-base">2. Upload your video message</Label>
+          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Optional</span>
+        </div>
         <p className="mb-3 mt-1 text-sm text-muted-foreground">
           Max 60 seconds, 100MB. This plays when the printed photo is
           scanned.
@@ -293,9 +299,12 @@ export function CustomizeForm({ productId }: { productId: string }) {
       </section>
 
       <section>
-        <Label htmlFor="message" className="text-base">
-          3. Write your message
-        </Label>
+        <div className="mb-1 flex items-center justify-between">
+          <Label htmlFor="message" className="text-base">
+            3. Write your message
+          </Label>
+          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Optional</span>
+        </div>
         <p className="mb-3 mt-1 text-sm text-muted-foreground">
           Shown on the greeting screen before the AR experience launches.
         </p>
@@ -314,7 +323,7 @@ export function CustomizeForm({ productId }: { productId: string }) {
       </section>
 
       <div className="space-y-3">
-        {canContinue && (
+        {canPreviewAR && (
           <Button
             type="button"
             size="lg"
@@ -339,20 +348,15 @@ export function CustomizeForm({ productId }: { productId: string }) {
         <Button
           size="lg"
           className="w-full"
-          disabled={!canContinue}
+          disabled={!canCheckout}
           onClick={() => router.push(`/checkout?productId=${productId}`)}
         >
           Continue to Checkout
         </Button>
         <div className="text-center">
-          <button
-            type="button"
-            disabled={!canSkip}
-            onClick={() => router.push(`/checkout?productId=${productId}`)}
-            className="text-sm text-muted-foreground underline underline-offset-4 hover:text-primary disabled:pointer-events-none disabled:opacity-50"
-          >
-            Skip for now — I&apos;ll send my photo &amp; video separately
-          </button>
+          <p className="text-sm text-muted-foreground">
+            You can send your photos and videos to us personally later.
+          </p>
         </div>
       </div>
     </div>

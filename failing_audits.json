@@ -1,0 +1,685 @@
+[
+  {
+    "id": "first-contentful-paint",
+    "title": "First Contentful Paint",
+    "score": 0.97,
+    "details": null
+  },
+  {
+    "id": "largest-contentful-paint",
+    "title": "Largest Contentful Paint",
+    "score": 0.4,
+    "details": null
+  },
+  {
+    "id": "speed-index",
+    "title": "Speed Index",
+    "score": 0.88,
+    "details": null
+  },
+  {
+    "id": "max-potential-fid",
+    "title": "Max Potential First Input Delay",
+    "score": 0.96,
+    "details": null
+  },
+  {
+    "id": "cumulative-layout-shift",
+    "title": "Cumulative Layout Shift",
+    "score": 0.93,
+    "details": {
+      "type": "debugdata",
+      "items": [
+        {
+          "cumulativeLayoutShiftMainFrame": 0.08383961117861483,
+          "newEngineResultDiffered": false
+        }
+      ]
+    }
+  },
+  {
+    "id": "interactive",
+    "title": "Time to Interactive",
+    "score": 0.84,
+    "details": null
+  },
+  {
+    "id": "color-contrast",
+    "title": "Background and foreground colors do not have a sufficient contrast ratio.",
+    "score": 0,
+    "details": {
+      "type": "table",
+      "headings": [
+        {
+          "key": "node",
+          "valueType": "node",
+          "subItemsHeading": {
+            "key": "relatedNode",
+            "valueType": "node"
+          },
+          "label": "Failing Elements"
+        }
+      ],
+      "items": [
+        {
+          "node": {
+            "type": "node",
+            "lhId": "1-0-P",
+            "path": "1,HTML,1,BODY,0,DIV,1,MAIN,1,MAIN,0,DIV,3,DIV,1,BUTTON,1,DIV,1,P",
+            "selector": "div.mt-12 > button.group > div.flex-1 > p.mt-0.5",
+            "boundingRect": {
+              "top": 1211,
+              "bottom": 1227,
+              "left": 118,
+              "right": 322,
+              "width": 204,
+              "height": 16
+            },
+            "snippet": "<p class=\"mt-0.5 text-xs text-primary/60\">",
+            "nodeLabel": "Bring your photo to life",
+            "explanation": "Fix any of the following:\n  Element has insufficient color contrast of 3.64 (foreground color: #ae7191, background color: #fefafb, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+          },
+          "subItems": {
+            "type": "subitems",
+            "items": [
+              {
+                "relatedNode": {
+                  "type": "node",
+                  "lhId": "1-1-BUTTON",
+                  "path": "1,HTML,1,BODY,0,DIV,1,MAIN,1,MAIN,0,DIV,3,DIV,1,BUTTON",
+                  "selector": "main.flex > div.min-h-screen > div.mt-12 > button.group",
+                  "boundingRect": {
+                    "top": 1166,
+                    "bottom": 1246,
+                    "left": 38,
+                    "right": 374,
+                    "width": 336,
+                    "height": 80
+                  },
+                  "snippet": "<button class=\"group relative flex w-full items-center gap-4 overflow-hidden rounded-2xl …\">",
+                  "nodeLabel": "LAUNCH AR SCAN PORTAL\n\nBring your photo to life"
+                }
+              },
+              {
+                "relatedNode": {
+                  "type": "node",
+                  "lhId": "1-2-DIV",
+                  "path": "1,HTML,1,BODY,0,DIV,1,MAIN,1,MAIN,0,DIV",
+                  "selector": "div.flex > main.flex-1 > main.flex > div.min-h-screen",
+                  "boundingRect": {
+                    "top": 58,
+                    "bottom": 1637,
+                    "left": 0,
+                    "right": 412,
+                    "width": 412,
+                    "height": 1579
+                  },
+                  "snippet": "<div class=\"min-h-screen w-full bg-background pb-24\">",
+                  "nodeLabel": "THE SCAN\nSTORY\n\nArav & Arya\n\nHappy Birthday, Arya!\n\nYou bring so much joy to ev…"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "node": {
+            "type": "node",
+            "lhId": "1-3-P",
+            "path": "1,HTML,1,BODY,0,DIV,1,MAIN,1,MAIN,0,DIV,3,DIV,2,BUTTON,1,DIV,1,P",
+            "selector": "div.mt-12 > button.group > div.flex-1 > p.mt-0.5",
+            "boundingRect": {
+              "top": 1328,
+              "bottom": 1344,
+              "left": 118,
+              "right": 322,
+              "width": 204,
+              "height": 16
+            },
+            "snippet": "<p class=\"mt-0.5 text-xs text-primary/60\">",
+            "nodeLabel": "Discover hidden memories",
+            "explanation": "Fix any of the following:\n  Element has insufficient color contrast of 3.64 (foreground color: #ae7191, background color: #fefafb, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+          },
+          "subItems": {
+            "type": "subitems",
+            "items": [
+              {
+                "relatedNode": {
+                  "type": "node",
+                  "lhId": "1-4-BUTTON",
+                  "path": "1,HTML,1,BODY,0,DIV,1,MAIN,1,MAIN,0,DIV,3,DIV,2,BUTTON",
+                  "selector": "main.flex > div.min-h-screen > div.mt-12 > button.group",
+                  "boundingRect": {
+                    "top": 1262,
+                    "bottom": 1360,
+                    "left": 38,
+                    "right": 374,
+                    "width": 336,
+                    "height": 98
+                  },
+                  "snippet": "<button class=\"group relative flex w-full items-center gap-4 overflow-hidden rounded-2xl …\">",
+                  "nodeLabel": "TAP-TO-REVEAL PHOTOWALL\n\nDiscover hidden memories"
+                }
+              },
+              {
+                "relatedNode": {
+                  "type": "node",
+                  "lhId": "1-2-DIV",
+                  "path": "1,HTML,1,BODY,0,DIV,1,MAIN,1,MAIN,0,DIV",
+                  "selector": "div.flex > main.flex-1 > main.flex > div.min-h-screen",
+                  "boundingRect": {
+                    "top": 58,
+                    "bottom": 1637,
+                    "left": 0,
+                    "right": 412,
+                    "width": 412,
+                    "height": 1579
+                  },
+                  "snippet": "<div class=\"min-h-screen w-full bg-background pb-24\">",
+                  "nodeLabel": "THE SCAN\nSTORY\n\nArav & Arya\n\nHappy Birthday, Arya!\n\nYou bring so much joy to ev…"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "node": {
+            "type": "node",
+            "lhId": "1-5-P",
+            "path": "1,HTML,1,BODY,0,DIV,1,MAIN,1,MAIN,0,DIV,3,DIV,3,DIV,1,BUTTON,1,DIV,1,P",
+            "selector": "div.mt-4 > button.group > div.flex-1 > p.mt-0.5",
+            "boundingRect": {
+              "top": 1506,
+              "bottom": 1522,
+              "left": 118,
+              "right": 322,
+              "width": 204,
+              "height": 16
+            },
+            "snippet": "<p class=\"mt-0.5 text-xs text-primary/60\">",
+            "nodeLabel": "Turn your photo into a memory",
+            "explanation": "Fix any of the following:\n  Element has insufficient color contrast of 3.64 (foreground color: #ae7191, background color: #fefafb, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+          },
+          "subItems": {
+            "type": "subitems",
+            "items": [
+              {
+                "relatedNode": {
+                  "type": "node",
+                  "lhId": "1-6-BUTTON",
+                  "path": "1,HTML,1,BODY,0,DIV,1,MAIN,1,MAIN,0,DIV,3,DIV,3,DIV,1,BUTTON",
+                  "selector": "div.min-h-screen > div.mt-12 > div.mt-4 > button.group",
+                  "boundingRect": {
+                    "top": 1461,
+                    "bottom": 1541,
+                    "left": 38,
+                    "right": 374,
+                    "width": 336,
+                    "height": 80
+                  },
+                  "snippet": "<button class=\"group relative flex w-full items-center gap-4 overflow-hidden rounded-2xl …\">",
+                  "nodeLabel": "CREATE YOUR OWN\n\nTurn your photo into a memory"
+                }
+              },
+              {
+                "relatedNode": {
+                  "type": "node",
+                  "lhId": "1-2-DIV",
+                  "path": "1,HTML,1,BODY,0,DIV,1,MAIN,1,MAIN,0,DIV",
+                  "selector": "div.flex > main.flex-1 > main.flex > div.min-h-screen",
+                  "boundingRect": {
+                    "top": 58,
+                    "bottom": 1637,
+                    "left": 0,
+                    "right": 412,
+                    "width": 412,
+                    "height": 1579
+                  },
+                  "snippet": "<div class=\"min-h-screen w-full bg-background pb-24\">",
+                  "nodeLabel": "THE SCAN\nSTORY\n\nArav & Arya\n\nHappy Birthday, Arya!\n\nYou bring so much joy to ev…"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "debugData": {
+        "type": "debugdata",
+        "impact": "serious",
+        "tags": [
+          "cat.color",
+          "wcag2aa",
+          "wcag143",
+          "TTv5",
+          "TT13.c",
+          "EN-301-549",
+          "EN-9.1.4.3",
+          "ACT",
+          "RGAAv4",
+          "RGAA-3.2.1"
+        ]
+      }
+    }
+  },
+  {
+    "id": "unused-javascript",
+    "title": "Reduce unused JavaScript",
+    "score": 0,
+    "details": {
+      "type": "opportunity",
+      "headings": [
+        {
+          "key": "url",
+          "valueType": "url",
+          "subItemsHeading": {
+            "key": "source",
+            "valueType": "code"
+          },
+          "label": "URL"
+        },
+        {
+          "key": "totalBytes",
+          "valueType": "bytes",
+          "subItemsHeading": {
+            "key": "sourceBytes"
+          },
+          "label": "Transfer Size"
+        },
+        {
+          "key": "wastedBytes",
+          "valueType": "bytes",
+          "subItemsHeading": {
+            "key": "sourceWastedBytes"
+          },
+          "label": "Est Savings"
+        }
+      ],
+      "items": [
+        {
+          "url": "https://www.thescanstory.com/_next/static/chunks/2008-d4694316410cc626.js",
+          "totalBytes": 43282,
+          "wastedBytes": 26032,
+          "wastedPercent": 60.14488174047683
+        }
+      ],
+      "overallSavingsMs": 190,
+      "overallSavingsBytes": 26032,
+      "sortedBy": [
+        "wastedBytes"
+      ],
+      "debugData": {
+        "type": "debugdata",
+        "metricSavings": {
+          "FCP": 0,
+          "LCP": 190
+        }
+      }
+    }
+  },
+  {
+    "id": "bf-cache",
+    "title": "Page prevented back/forward cache restoration",
+    "score": 0,
+    "details": {
+      "type": "table",
+      "headings": [
+        {
+          "key": "reason",
+          "valueType": "text",
+          "subItemsHeading": {
+            "key": "frameUrl",
+            "valueType": "url"
+          },
+          "label": "Failure reason"
+        },
+        {
+          "key": "failureType",
+          "valueType": "text",
+          "label": "Failure type"
+        }
+      ],
+      "items": [
+        {
+          "reason": "Pages with cache-control:no-store header cannot enter back/forward cache.",
+          "failureType": "Actionable",
+          "subItems": {
+            "type": "subitems",
+            "items": [
+              {
+                "frameUrl": "https://www.thescanstory.com/"
+              }
+            ]
+          },
+          "protocolReason": "CacheControlNoStoreHTTPOnlyCookieModified"
+        }
+      ]
+    }
+  },
+  {
+    "id": "image-delivery-insight",
+    "title": "Improve image delivery",
+    "score": 0,
+    "details": {
+      "type": "table",
+      "headings": [
+        {
+          "key": "node",
+          "valueType": "node",
+          "label": ""
+        },
+        {
+          "key": "url",
+          "valueType": "url",
+          "label": "URL",
+          "subItemsHeading": {
+            "key": "reason",
+            "valueType": "text"
+          }
+        },
+        {
+          "key": "totalBytes",
+          "valueType": "bytes",
+          "label": "Resource Size"
+        },
+        {
+          "key": "wastedBytes",
+          "valueType": "bytes",
+          "label": "Est Savings",
+          "subItemsHeading": {
+            "key": "wastedBytes",
+            "valueType": "bytes"
+          }
+        }
+      ],
+      "items": [
+        {
+          "node": {
+            "type": "node",
+            "lhId": "page-0-IMG",
+            "path": "1,HTML,1,BODY,0,DIV,1,MAIN,1,MAIN,0,DIV,1,DIV,0,DIV,0,DIV,0,DIV,0,IMG",
+            "selector": "div.gold-frame > div.gold-frame-mat > div.relative > img.h-full",
+            "boundingRect": {
+              "top": 276,
+              "bottom": 675,
+              "left": 60,
+              "right": 352,
+              "width": 292,
+              "height": 399
+            },
+            "snippet": "<img src=\"https://images.unsplash.com/photo-1511895426328-dc8714191300?q=80&amp;w=600&amp;au…\" alt=\"Your photo\" class=\"h-full w-full object-cover\">",
+            "nodeLabel": "Your photo"
+          },
+          "url": "https://images.unsplash.com/photo-1511895426328-dc8714191300?q=80&w=600&auto=format&fit=crop",
+          "totalBytes": 36386,
+          "wastedBytes": 16854,
+          "subItems": {
+            "type": "subitems",
+            "items": [
+              {
+                "reason": "Increasing the image compression factor could improve this image's download size.",
+                "wastedBytes": 16854
+              }
+            ]
+          }
+        }
+      ],
+      "debugData": {
+        "type": "debugdata",
+        "wastedBytes": 16854
+      }
+    }
+  },
+  {
+    "id": "lcp-discovery-insight",
+    "title": "LCP request discovery",
+    "score": 0,
+    "details": {
+      "type": "list",
+      "items": [
+        {
+          "type": "checklist",
+          "items": {
+            "priorityHinted": {
+              "label": "fetchpriority=high should be applied to the image preload request",
+              "value": false
+            },
+            "requestDiscoverable": {
+              "label": "Request is discoverable in initial document",
+              "value": true
+            },
+            "eagerlyLoaded": {
+              "label": "LCP resources should not use loading=lazy",
+              "value": true
+            }
+          }
+        },
+        {
+          "type": "node",
+          "lhId": "page-0-IMG",
+          "path": "1,HTML,1,BODY,0,DIV,1,MAIN,1,MAIN,0,DIV,1,DIV,0,DIV,0,DIV,0,DIV,0,IMG",
+          "selector": "div.gold-frame > div.gold-frame-mat > div.relative > img.h-full",
+          "boundingRect": {
+            "top": 276,
+            "bottom": 675,
+            "left": 60,
+            "right": 352,
+            "width": 292,
+            "height": 399
+          },
+          "snippet": "<img src=\"https://images.unsplash.com/photo-1511895426328-dc8714191300?q=80&amp;w=600&amp;au…\" alt=\"Your photo\" class=\"h-full w-full object-cover\">",
+          "nodeLabel": "Your photo"
+        }
+      ]
+    }
+  },
+  {
+    "id": "legacy-javascript-insight",
+    "title": "Legacy JavaScript",
+    "score": 0,
+    "details": {
+      "type": "table",
+      "headings": [
+        {
+          "key": "url",
+          "valueType": "url",
+          "subItemsHeading": {
+            "key": "location",
+            "valueType": "source-location"
+          },
+          "label": "URL"
+        },
+        {
+          "key": null,
+          "valueType": "code",
+          "subItemsHeading": {
+            "key": "signal"
+          },
+          "label": ""
+        },
+        {
+          "key": "wastedBytes",
+          "valueType": "bytes",
+          "label": "Wasted bytes"
+        }
+      ],
+      "items": [
+        {
+          "url": "https://www.thescanstory.com/_next/static/chunks/2117-23a6e48423cca72c.js",
+          "wastedBytes": 11678,
+          "subItems": {
+            "type": "subitems",
+            "items": [
+              {
+                "signal": "Array.prototype.at",
+                "location": {
+                  "type": "source-location",
+                  "url": "https://www.thescanstory.com/_next/static/chunks/2117-23a6e48423cca72c.js",
+                  "urlProvider": "network",
+                  "line": 0,
+                  "column": 1274
+                }
+              },
+              {
+                "signal": "Array.prototype.flat",
+                "location": {
+                  "type": "source-location",
+                  "url": "https://www.thescanstory.com/_next/static/chunks/2117-23a6e48423cca72c.js",
+                  "urlProvider": "network",
+                  "line": 0,
+                  "column": 662
+                }
+              },
+              {
+                "signal": "Array.prototype.flatMap",
+                "location": {
+                  "type": "source-location",
+                  "url": "https://www.thescanstory.com/_next/static/chunks/2117-23a6e48423cca72c.js",
+                  "urlProvider": "network",
+                  "line": 0,
+                  "column": 775
+                }
+              },
+              {
+                "signal": "Object.fromEntries",
+                "location": {
+                  "type": "source-location",
+                  "url": "https://www.thescanstory.com/_next/static/chunks/2117-23a6e48423cca72c.js",
+                  "urlProvider": "network",
+                  "line": 0,
+                  "column": 1151
+                }
+              },
+              {
+                "signal": "Object.hasOwn",
+                "location": {
+                  "type": "source-location",
+                  "url": "https://www.thescanstory.com/_next/static/chunks/2117-23a6e48423cca72c.js",
+                  "urlProvider": "network",
+                  "line": 0,
+                  "column": 1409
+                }
+              },
+              {
+                "signal": "String.prototype.trimEnd",
+                "location": {
+                  "type": "source-location",
+                  "url": "https://www.thescanstory.com/_next/static/chunks/2117-23a6e48423cca72c.js",
+                  "urlProvider": "network",
+                  "line": 0,
+                  "column": 404
+                }
+              },
+              {
+                "signal": "String.prototype.trimStart",
+                "location": {
+                  "type": "source-location",
+                  "url": "https://www.thescanstory.com/_next/static/chunks/2117-23a6e48423cca72c.js",
+                  "urlProvider": "network",
+                  "line": 0,
+                  "column": 319
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "debugData": {
+        "type": "debugdata",
+        "wastedBytes": 11678
+      }
+    }
+  },
+  {
+    "id": "network-dependency-tree-insight",
+    "title": "Network dependency tree",
+    "score": 0,
+    "details": {
+      "type": "list",
+      "items": [
+        {
+          "type": "list-section",
+          "value": {
+            "type": "network-tree",
+            "chains": {
+              "53436A6F61146F46B9CA81E20807551F": {
+                "url": "https://www.thescanstory.com/",
+                "navStartToEndTime": 1651,
+                "transferSize": 7602,
+                "isLongest": true,
+                "children": {
+                  "3992.5": {
+                    "url": "https://www.thescanstory.com/_next/static/css/cbcd4f4c5b113b4b.css",
+                    "navStartToEndTime": 1629,
+                    "transferSize": 11297,
+                    "isLongest": true,
+                    "children": {
+                      "3992.40": {
+                        "url": "https://www.thescanstory.com/_next/static/media/8e9860b6e62d6359-s.woff2",
+                        "navStartToEndTime": 1917,
+                        "transferSize": 85527,
+                        "isLongest": true,
+                        "children": {}
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "longestChain": {
+              "duration": 1917
+            }
+          }
+        },
+        {
+          "type": "list-section",
+          "title": "Preconnected origins",
+          "description": "[preconnect](https://developer.chrome.com/docs/lighthouse/performance/uses-rel-preconnect/) hints help the browser establish a connection earlier in the page load, saving time when the first request for that origin is made. The following are the origins that the page preconnected to.",
+          "value": {
+            "type": "text",
+            "value": "no origins were preconnected"
+          }
+        },
+        {
+          "type": "list-section",
+          "title": "Preconnect candidates",
+          "description": "Add [preconnect](https://developer.chrome.com/docs/lighthouse/performance/uses-rel-preconnect/) hints to your most important origins, but try to use no more than 4.",
+          "value": {
+            "type": "text",
+            "value": "No additional origins are good candidates for preconnecting"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "render-blocking-insight",
+    "title": "Render-blocking requests",
+    "score": 0,
+    "details": {
+      "type": "table",
+      "headings": [
+        {
+          "key": "url",
+          "valueType": "url",
+          "label": "URL"
+        },
+        {
+          "key": "totalBytes",
+          "valueType": "bytes",
+          "label": "Transfer Size"
+        },
+        {
+          "key": "wastedMs",
+          "valueType": "timespanMs",
+          "label": "Duration"
+        }
+      ],
+      "items": [
+        {
+          "url": "https://www.thescanstory.com/_next/static/css/cbcd4f4c5b113b4b.css",
+          "totalBytes": 11297,
+          "wastedMs": 187
+        }
+      ]
+    }
+  }
+]

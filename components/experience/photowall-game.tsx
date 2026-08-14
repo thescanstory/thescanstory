@@ -84,7 +84,7 @@ export function PhotowallGame({
           </button>
         ) : (
           <Link
-            href={`/experience/${slug}/story`}
+            href={`/experience/${slug}`}
             className="flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-primary shadow-sm backdrop-blur active:scale-95 transition-transform"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -186,7 +186,7 @@ export function PhotowallGame({
                     asChild
                     className="rounded-full bg-accent text-white font-semibold hover:bg-accent/95"
                   >
-                    <Link href={`/experience/${slug}/story`}>Menu</Link>
+                    <Link href={`/experience/${slug}`}>Menu</Link>
                   </Button>
                 )}
               </div>

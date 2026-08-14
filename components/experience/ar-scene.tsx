@@ -326,7 +326,7 @@ export function ARScene({
       {(status === "scanning" || status === "target-found" || status === "playing") && (
         <div className="absolute top-4 left-4 right-4 z-20 flex justify-between items-center pointer-events-none">
           <Link
-            href={`/experience/${slug}/story`}
+            href={`/experience/${slug}`}
             className="flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur pointer-events-auto"
           >
             <ArrowLeft className="h-5 w-5" />

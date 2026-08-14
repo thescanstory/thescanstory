@@ -5,6 +5,7 @@ import { getMessageByOrder } from "@/lib/db/messages";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { splitMessage } from "@/lib/experience/split-message";
 import { PhotowallGame } from "@/components/experience/photowall-game";
+import { PreparingScreen } from "@/components/experience/preparing-screen";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,9 @@ export default async function ExperienceGamePage({
   ]);
 
   const photo = assets.find((a) => a.type === "target_photo");
-  if (!photo) notFound();
+  if (!photo) {
+    return <PreparingScreen />;
+  }
 
   const supabase = createAdminClient();
   const photoSigned = await supabase.storage
